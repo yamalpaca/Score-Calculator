@@ -4,7 +4,7 @@ body {
 
 @font-face {
   font-family: "SeuratPro";
-  src: url("/src/FOT-SeuratPro-B.otf") format("opentype");
+  src: url("/src/fonts/FOT-SeuratPro-B.otf") format("opentype");
 }
 
 .chart-container {

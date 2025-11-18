@@ -1,11 +1,11 @@
-import btnimg from "./btnimg.png";
 import { gameData } from "./gamedata.ts";
-import gameimg from "./gameicons.png";
-import meterimg from "./meterimg.png";
-import pntimg from "./pntimg.png";
+import btnimg from "./images/btnimg.png";
+import gameimg from "./images/gameicons.png";
+import meterimg from "./images/meterimg.png";
+import pntimg from "./images/pntimg.png";
 import "./style.css";
 
-const customFont = new FontFace("SeuratPro", "/src/FOT-SeuratPro-B.otf");
+const customFont = new FontFace("SeuratPro", "/src/fonts/FOT-SeuratPro-B.otf");
 document.fonts.add(customFont);
 
 interface Criteria {
