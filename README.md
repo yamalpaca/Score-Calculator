@@ -23,6 +23,7 @@ v.0.4.0
 - added inputs that require holding and releasing buttons
 - added Fillbots
 - revised First Contact, Second Contact, and Citrus Remix
+- currently selected game is now saved after reloading page
 
 v.0.3.0
 
