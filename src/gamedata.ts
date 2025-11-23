@@ -1886,8 +1886,10 @@ export const gameData: Game[] = [
         { ...inD, criteria: 0, button: 4, square: true },
         { ...inD, criteria: 1, button: 5, square: true },
       ]),
-      { ...inD, criteria: 3, button: 4 },
-      { ...inD, criteria: 3, button: 5 },
+      ...combo([
+        { ...inD, criteria: 3, button: 4 },
+        { ...inD, criteria: 3, button: 5 },
+      ]),
       ...combo([
         { ...inD, criteria: 2, button: 4, square: true },
         { ...inD, criteria: 0, button: 5, square: true },
@@ -3059,7 +3061,10 @@ export const gameData: Game[] = [
         { ...inD, criteria: 0, button: 4, square: true },
         { ...inD, criteria: 1, button: 5, square: true },
       ]),
-      ...Array(2).fill({ ...inD, criteria: 3 }),
+      ...combo([
+        { ...inD, criteria: 3, button: 4 },
+        { ...inD, criteria: 3, button: 5 },
+      ]),
       ...Array(2).fill(
         combo([
           { ...inD, criteria: 0, button: 4, square: true },
