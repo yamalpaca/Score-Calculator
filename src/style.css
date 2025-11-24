@@ -6,6 +6,10 @@ body {
   font-family: "SeuratPro";
   src: url("/src/fonts/FOT-SeuratPro-B.otf") format("opentype");
 }
+@font-face {
+  font-family: "Kurokanestd";
+  src: url("/src/fonts/FOT-KurokaneStd.otf") format("opentype");
+}
 
 .chart-container {
   position: relative;
@@ -14,14 +18,14 @@ body {
 }
 
 .title-sub {
-  font: 16px Kurokane;
-  margin: 0 0 -5px 0;
+  font: 16px Kurokanestd;
+  margin: 0 0 -20px 0;
   letter-spacing: 0px;
   color: rgb(159, 159, 159);
 }
 
 .title-main {
-  font: 36px Kurokane;
+  font: 36px Kurokanestd;
   margin: 0 0 20px 0;
   letter-spacing: -1px;
   color: rgb(255, 255, 255);
@@ -60,8 +64,8 @@ body {
 }
 
 .meter-container p {
-  margin: 0 0px 0 0;
-  padding: 0 0 20px 0;
+  margin: 0 0 0 0;
+  padding: 0 0 15px 0;
   text-align: center;
   -webkit-text-stroke: 0.75px white;
 }
@@ -84,10 +88,11 @@ canvas {
 .meter-canvas {
   border: 1.5px solid white;
   border-radius: 16px;
+  margin: 0 0 -15px 0;
 }
 
 .score-text {
-  font-family: Kurokane;
+  font-family: Kurokanestd;
   font-size: 32px;
   text-align: center;
   letter-spacing: -2px;
@@ -125,7 +130,7 @@ canvas {
   border: 2px solid white;
   background: #9900fe;
   text-align: left;
-  font: 18px Kurokane;
+  font: 18px Kurokanestd;
   display: flex;
   align-items: center;
 }
@@ -134,7 +139,7 @@ canvas {
   padding: 4px;
   border: 1px solid #450073;
   text-align: left;
-  font: 18px Kurokane;
+  font: 18px Kurokanestd;
   color: #000;
   display: flex;
   align-items: center;

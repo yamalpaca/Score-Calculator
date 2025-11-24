@@ -136,7 +136,7 @@ let dataTable = document.createElement("div");
 chartContainer.append(dataTable);
 
 const creditsText = document.createElement("h1");
-creditsText.textContent = "yamalpaca - v.0.6.0";
+creditsText.textContent = "yamalpaca - v.0.6.1";
 creditsText.className = "credits";
 document.body.append(creditsText);
 

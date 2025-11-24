@@ -1,6 +1,6 @@
 # RHM Score Calculator
 
-v.0.6.0
+v.0.6.1
 
 yamalpaca
 
@@ -16,6 +16,11 @@ yamalpaca
 ---
 
 ## Change Log
+
+v.0.6.1
+
+- fixed kurokane font
+- added credits
 
 v.0.6.0
 
@@ -60,3 +65,9 @@ v.0.1.1
 v.0.1.0
 
 - first release
+
+---
+
+## Credits
+
+- Tailx501: Seurat and Kurokane Fonts
