@@ -3,7 +3,7 @@
 // deno --version
 // deno task dev
 
-import { gameData } from "./gamedata.ts";
+import { gameData, timingData } from "./gamedata.ts";
 import btnimg from "./images/btnimg.png";
 import gameimg from "./images/gameicons.png";
 import inputimg from "./images/inputimg.png";
@@ -18,9 +18,11 @@ interface Criteria {
   name: string;
   weight: number;
   hits: number;
-  score: number;
+  minscore: number;
+  maxscore: number;
   total: number;
-  result: number;
+  minresult: number;
+  maxresult: number;
 }
 
 const critPal: string[] = [
@@ -58,19 +60,19 @@ currGame = loadState();
 
 let gd = gameData[currGame];
 let pressCounter: number;
-let finalScore: number;
-let maxScore: number;
-let prevScore: number;
+let finalMinScore: number;
+let finalMaxScore: number;
+let sumScore: number;
 let selectX: number;
 let prevSelectX: number;
 let selectY: number;
-let prevSelectY: number;
+let prevY: number;
+let sliderY: number;
 let maxWidth: number;
 let scrollX: number;
 let dragStartX: number;
 let dragStartScrollX: number;
 let drawState: boolean;
-let drawAccState: number;
 let mouseFocus: number;
 
 const critData: Criteria[] = [];
@@ -111,10 +113,6 @@ const pressText = document.createElement("p");
 pressText.className = "press-text";
 chartTextRow.append(pressText);
 
-const diffText = document.createElement("p");
-diffText.className = "diff-text";
-chartTextRow.append(diffText);
-
 const meterWrapper = document.createElement("div");
 meterWrapper.className = "meter-wrapper";
 chartContainer.append(meterWrapper);
@@ -138,7 +136,7 @@ let dataTable = document.createElement("div");
 chartContainer.append(dataTable);
 
 const creditsText = document.createElement("h1");
-creditsText.textContent = "yamalpaca - v.0.5.1";
+creditsText.textContent = "yamalpaca - v.0.6.0";
 creditsText.className = "credits";
 document.body.append(creditsText);
 
@@ -153,7 +151,10 @@ gameIcons.src = gameimg;
 
 const btnPressed: boolean[] = [];
 const btnActive: boolean[] = [];
-const btnAccuracy: number[] = [];
+const btnMinAccuracy: number[] = [];
+const btnMaxAccuracy: number[] = [];
+const btnSlider: number[] = [];
+const btnType: number[] = [];
 
 function loadGame(index: number) {
   gd = gameData[index];
@@ -162,21 +163,26 @@ function loadGame(index: number) {
   selectX = -1;
   prevSelectX = -1;
   selectY = -1;
-  prevSelectY = -1;
+  prevY = -1;
+  sliderY = 0;
   mouseFocus = 0;
   scrollX = 0;
-  finalScore = 100;
-  prevScore = 100;
-  maxScore = 0;
+  finalMinScore = 100;
+  finalMaxScore = 100;
+  sumScore = 0;
   critData.splice(0, critData.length);
   btnPressed.splice(0, btnPressed.length);
   btnActive.splice(0, btnActive.length);
-  btnAccuracy.splice(0, btnAccuracy.length);
+  btnMinAccuracy.splice(0, btnMinAccuracy.length);
+  btnMaxAccuracy.splice(0, btnMaxAccuracy.length);
+  btnSlider.splice(0, btnSlider.length);
+  btnType.splice(0, btnType.length);
   btnPressed.push(...Array(gd.inputs.length).fill(true));
   btnActive.push(...Array(gd.inputs.length).fill(true));
-  btnAccuracy.push(...Array(gd.inputs.length).fill(100));
-
-  diffText.textContent = "";
+  btnMinAccuracy.push(...Array(gd.inputs.length).fill(100));
+  btnMaxAccuracy.push(...Array(gd.inputs.length).fill(100));
+  btnSlider.push(...Array(gd.inputs.length).fill(3));
+  btnType.push(...Array(gd.inputs.length).fill(0));
 
   updatePage(true);
 }
@@ -188,14 +194,14 @@ function updatePage(all: boolean) {
 
     chartCanvas.width = (gd.inputs.length * tileSize) + selectOffsetX;
 
-    if (chartCanvas.width > (40.5 * tileSize) + selectOffsetX) {
-      chartCanvas.width = (40.5 * tileSize) + selectOffsetX;
+    if (chartCanvas.width > (30.5 * tileSize) + selectOffsetX) {
+      chartCanvas.width = (30.5 * tileSize) + selectOffsetX;
     }
 
     if (chartCanvas.width > globalThis.innerWidth - 15) {
       chartCanvas.width = globalThis.innerWidth - 15;
     }
-    chartCanvas.height = tileSize * (critData.length + 3);
+    chartCanvas.height = tileSize * (critData.length + 2) + 95;
 
     maxWidth = Math.floor((chartCanvas.width - selectOffsetX) / tileSize);
 
@@ -210,9 +216,9 @@ function updatePage(all: boolean) {
 
 function updateData() {
   critData.splice(0, critData.length);
-  prevScore = finalScore;
-  finalScore = 0;
-  maxScore = 0;
+  finalMinScore = 0;
+  finalMaxScore = 0;
+  sumScore = 0;
   pressCounter = 0;
 
   for (let i: number = 0; i < gd.critweight.length; i++) {
@@ -221,16 +227,36 @@ function updateData() {
       name: i == gd.critweight.length - 1 ? "Skill Star" : gd.critname[i],
       weight: gd.critweight[i],
       hits: 0,
-      score: 0,
+      minscore: 0,
+      maxscore: 0,
       total: 0,
-      result: 0,
+      minresult: 0,
+      maxresult: 0,
     });
   }
 
+  let gameid = gd.image;
+
   for (let i: number = 0; i < gd.inputs.length; i++) {
     const input = gd.inputs[i];
+
+    btnType[i] = 0;
+    const sep = gd.separators?.find((s) => s.index === i && s.img);
+    if (sep) {
+      gameid = sep.img as number;
+    }
+
+    if (timingData[gameid]?.type) {
+      btnType[i] = timingData[gameid]?.type as number;
+    }
+
     btnActive[i] = !(input.combo && input.combotype != 1 &&
       (!btnPressed[i - 1] || !btnActive[i - 1]));
+    if (btnType[i - 1] == 1) {
+      if ([0, 6].includes(btnSlider[i - 1]) && gd.inputs[i - 1].button == 4) {
+        btnActive[i] = false;
+      }
+    }
 
     if (!input.square) {
       critData[input.criteria].total += input.multi;
@@ -264,27 +290,110 @@ function updateData() {
     }
 
     if (btnPressed[i] && btnActive[i]) {
+      let minacc = 100;
+      let maxacc = 100;
+      if (btnType[i] == 4 && [5, 7].includes(gd.inputs[i].button)) {
+        btnSlider[i] = 3;
+      } else if (btnType[i] == 7 && [5, 7].includes(gd.inputs[i].button)) {
+        btnSlider[i] = 3;
+      } else {
+        if (btnSlider[i] == 0) {
+          minacc = timingData[gameid].main[0];
+          if (timingData[gameid]?.release) {
+            if ([4, 6].includes(gd.inputs[i].button)) {
+              minacc = timingData[gameid].hold?.[0] ?? minacc;
+            }
+            if ([5, 7].includes(gd.inputs[i].button)) {
+              minacc = timingData[gameid].release?.[0] ?? minacc;
+            }
+          }
+          maxacc = 60;
+
+          if (btnType[i] == 2) btnSlider[i] = 1;
+          if (btnType[i] == 3 && [6, 7].includes(gd.inputs[i].button)) {
+            btnSlider[i] = 1;
+          }
+          if (btnType[i] == 4 && [4, 6].includes(gd.inputs[i].button)) {
+            btnSlider[i] = 1;
+          }
+          if (btnType[i] == 5 && [5, 7].includes(gd.inputs[i].button)) {
+            btnSlider[i] = 1;
+          }
+          if (btnType[i] == 6 && [4, 6].includes(gd.inputs[i].button)) {
+            btnSlider[i] = 1;
+          }
+        }
+
+        if (btnSlider[i] == 6) {
+          minacc = timingData[gameid].main[1];
+          maxacc = timingData[gameid].main[2];
+          if (timingData[gameid]?.release) {
+            if ([4, 6].includes(gd.inputs[i].button)) {
+              minacc = timingData[gameid].hold?.[1] ?? minacc;
+              maxacc = timingData[gameid].hold?.[2] ?? maxacc;
+            }
+            if ([5, 7].includes(gd.inputs[i].button)) {
+              minacc = timingData[gameid].release?.[1] ?? minacc;
+              maxacc = timingData[gameid].release?.[2] ?? maxacc;
+            }
+          }
+
+          if (btnType[i] == 2) btnSlider[i] = 5;
+          if (btnType[i] == 3 && [6, 7].includes(gd.inputs[i].button)) {
+            btnSlider[i] = 5;
+          }
+          if (btnType[i] == 4 && [4, 6].includes(gd.inputs[i].button)) {
+            btnSlider[i] = 5;
+          }
+          if (btnType[i] == 5 && [5, 7].includes(gd.inputs[i].button)) {
+            btnSlider[i] = 5;
+          }
+          if (btnType[i] == 6 && [4, 6].includes(gd.inputs[i].button)) {
+            btnSlider[i] = 5;
+          }
+        }
+
+        if ([1, 5].includes(btnSlider[i])) {
+          minacc = 80;
+          maxacc = 84;
+        }
+        if ([2, 4].includes(btnSlider[i])) {
+          minacc = 85;
+          maxacc = 94;
+        }
+      }
+      btnMinAccuracy[i] = minacc;
+      btnMaxAccuracy[i] = maxacc;
+
       critData[input.criteria].hits += input.multi;
-      critData[input.criteria].score += btnAccuracy[i] * input.multi;
+      critData[input.criteria].minscore += btnMinAccuracy[i] * input.multi;
+      critData[input.criteria].maxscore += btnMaxAccuracy[i] * input.multi;
 
       if (input.extracrit > -1) {
         critData[input.extracrit].hits++;
-        critData[input.extracrit].score += btnAccuracy[i];
+        critData[input.extracrit].minscore += btnMinAccuracy[i];
+        critData[input.extracrit].maxscore += btnMaxAccuracy[i];
       }
     }
   }
 
   critData.forEach((c: Criteria) => {
-    if (c.total > 0) maxScore += c.weight;
+    c.minscore = Math.max(c.minscore, 0);
+    c.maxscore = Math.max(c.maxscore, 0);
+    if (c.total > 0) sumScore += c.weight;
   });
 
   critData.forEach((c: Criteria) => {
     if (c.total == 0) {
-      c.result = 0;
+      c.minresult = 0;
+      c.maxresult = 0;
     } else {
-      c.result = badRounding(c.score / (c.total * 100)) *
-        (c.weight / maxScore) * 100;
-      finalScore += c.result;
+      c.minresult = badRounding(c.minscore / (c.total * 100)) *
+        (c.weight / sumScore) * 100;
+      c.maxresult = badRounding(c.maxscore / (c.total * 100)) *
+        (c.weight / sumScore) * 100;
+      finalMinScore += c.minresult;
+      finalMaxScore += c.maxresult;
     }
   });
 }
@@ -300,7 +409,7 @@ function drawHeader() {
   ctx.lineWidth = 0.5;
   ctx.beginPath();
   ctx.moveTo(selectOffsetX - 1, 0);
-  ctx.lineTo(selectOffsetX - 1, (critData.length + 3) * tileSize);
+  ctx.lineTo(selectOffsetX - 1, (critData.length + 3) * tileSize + 95);
   ctx.stroke();
 
   for (let i: number = 0; i < critData.length; i++) {
@@ -355,10 +464,23 @@ function drawHeader() {
     selectOffsetX - 7,
     (critData.length + 2) * tileSize - 9,
   );
+
+  ctx.font = "12px Arial";
+  ctx.filter = "brightness(50%)";
   ctx.fillText(
-    "Timing",
+    "Early",
     selectOffsetX - 7,
-    (critData.length + 3) * tileSize - 9,
+    (critData.length + 3) * tileSize - 18,
+  );
+  ctx.fillText(
+    "Perfect",
+    selectOffsetX - 7,
+    (critData.length + 3) * tileSize + 12,
+  );
+  ctx.fillText(
+    "Late",
+    selectOffsetX - 7,
+    (critData.length + 3) * tileSize + 42,
   );
 
   ctx.strokeStyle = "black";
@@ -438,20 +560,17 @@ function drawChart() {
       if (sep.index > 0) {
         ctx.beginPath();
         ctx.setLineDash([5, 5]);
-        ctx.moveTo(drawX, 0);
+        ctx.lineWidth = 0.5;
+        ctx.moveTo(drawX, 2);
         ctx.lineTo(drawX, tileSize);
         ctx.stroke();
+
         ctx.strokeStyle = "black";
         ctx.beginPath();
         ctx.setLineDash([5, 5]);
-        ctx.moveTo(drawX, tileSize);
+        ctx.lineWidth = 1;
+        ctx.moveTo(drawX, tileSize + 2);
         ctx.lineTo(drawX, (critData.length + 1) * tileSize);
-        ctx.stroke();
-        ctx.strokeStyle = "white";
-        ctx.beginPath();
-        ctx.setLineDash([5, 5]);
-        ctx.moveTo(drawX, (critData.length + 1) * tileSize);
-        ctx.lineTo(drawX, (critData.length + 3) * tileSize);
         ctx.stroke();
       }
 
@@ -486,6 +605,14 @@ function drawChart() {
       ctx.setLineDash([]);
 
       if (!btnPressed[ioffset] || !btnActive[ioffset]) {
+        ctx.lineWidth = 4;
+        ctx.setLineDash([4, 5]);
+      }
+
+      if (
+        [0, 6].includes(btnSlider[ioffset]) && input.button == 4 &&
+        btnType[ioffset] == 1
+      ) {
         ctx.lineWidth = 4;
         ctx.setLineDash([4, 5]);
       }
@@ -573,14 +700,64 @@ function drawChart() {
 function drawInterface() {
   const ctx = chartCanvas.getContext("2d")!;
   if (!ctx) return;
+  ctx.filter = "none";
 
   ctx.fillStyle = "#141414ff";
   ctx.fillRect(
     selectOffsetX,
     tileSize * (critData.length + 1),
     gd.inputs.length * tileSize,
-    tileSize * 2,
+    tileSize * 2 + 95,
   );
+
+  for (let i: number = -loadDist; i < maxWidth + loadDist + 1; i++) {
+    const ioffset = i + Math.floor(scrollX / tileSize);
+    if (!gd.inputs[ioffset]) continue;
+    if (gd.inputs[ioffset].multi == 0) continue;
+
+    let sliderOffset = 0;
+
+    if (btnType[ioffset] == 2) sliderOffset = 10;
+    if (btnType[ioffset] == 3 && [6, 7].includes(gd.inputs[ioffset].button)) {
+      sliderOffset = 10;
+    }
+    if (btnType[ioffset] == 4 && [4, 6].includes(gd.inputs[ioffset].button)) {
+      sliderOffset = 10;
+    }
+    if (btnType[ioffset] == 4 && [5, 7].includes(gd.inputs[ioffset].button)) {
+      continue;
+    }
+    if (btnType[ioffset] == 5 && [5, 7].includes(gd.inputs[ioffset].button)) {
+      sliderOffset = 10;
+    }
+    if (btnType[ioffset] == 6 && [4, 6].includes(gd.inputs[ioffset].button)) {
+      sliderOffset = 10;
+    }
+    if (btnType[ioffset] == 7 && [5, 7].includes(gd.inputs[ioffset].button)) {
+      continue;
+    }
+
+    if (btnPressed[ioffset] && btnActive[ioffset]) {
+      if ([0, 6].includes(btnSlider[ioffset])) ctx.fillStyle = "#560900";
+      if ([1, 5].includes(btnSlider[ioffset])) ctx.fillStyle = "#6A2200";
+      if ([2, 4].includes(btnSlider[ioffset])) ctx.fillStyle = "#5A4100";
+      if (btnSlider[ioffset] == 3) ctx.fillStyle = "#611B3A";
+      ctx.fillRect(
+        (i * tileSize) + selectOffsetX + 10 - (scrollX % 30),
+        (critData.length + 2) * tileSize + 5 + sliderOffset,
+        10,
+        66 - (sliderOffset * 2),
+      );
+    } else {
+      ctx.fillStyle = "#2c2c2cff";
+      ctx.fillRect(
+        (i * tileSize) + selectOffsetX + 13 - (scrollX % 30),
+        (critData.length + 2) * tileSize + 5 + sliderOffset,
+        4,
+        66 - (sliderOffset * 2),
+      );
+    }
+  }
 
   for (let i: number = -loadDist; i < maxWidth + loadDist + 1; i++) {
     const ioffset = i + Math.floor(scrollX / tileSize);
@@ -625,31 +802,33 @@ function drawInterface() {
         (scrollX % 30),
       tileSize * (critData.length + 1),
       tileSize,
-      tileSize * 2,
+      tileSize * 2 + 95,
     );
   }
 
   for (let i: number = -loadDist; i < maxWidth + loadDist + 1; i++) {
     const ioffset = i + Math.floor(scrollX / tileSize);
+    const input = gd.inputs[ioffset];
 
-    if (!gd.inputs[ioffset]) continue;
+    if (!input) continue;
 
     ctx.filter = "brightness(100%)";
-
+    /*
     const sep = gd.separators?.find((s) => s.index === ioffset);
     if (sep) {
       if (sep.index > 0) {
         const drawX = (ioffset * tileSize) + selectOffsetX - scrollX;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 0.5;
         ctx.strokeStyle = "white";
         ctx.beginPath();
         ctx.setLineDash([5, 5]);
-        ctx.moveTo(drawX, (critData.length + 1) * tileSize);
-        ctx.lineTo(drawX, (critData.length + 3) * tileSize);
+        ctx.moveTo(drawX, (critData.length + 1) * tileSize + 0.5);
+        ctx.lineTo(drawX, (critData.length + 3) * tileSize + 95);
         ctx.stroke();
       }
     }
     ctx.setLineDash([]);
+    */
 
     if (!btnActive[ioffset]) {
       drawIcon(
@@ -673,28 +852,46 @@ function drawInterface() {
     drawIcon(
       (i * tileSize) + selectOffsetX - (scrollX % 30),
       (critData.length + 1) * tileSize,
-      gd.inputs[ioffset].button,
+      input.button,
       0,
       btnIcons,
       chartCanvas,
     );
 
-    if (gd.inputs[ioffset].multi > 0) {
-      ctx.filter = "brightness(100%)";
-      ctx.fillStyle = "white";
+    if (input.multi > 0 && btnPressed[ioffset]) {
+      if ([0, 6].includes(btnSlider[ioffset])) ctx.fillStyle = "#D12727";
+      if ([1, 5].includes(btnSlider[ioffset])) ctx.fillStyle = "#ff732dff";
+      if ([2, 4].includes(btnSlider[ioffset])) ctx.fillStyle = "#FBB400";
+      if (btnSlider[ioffset] == 3) ctx.fillStyle = "#FF4699";
+
+      ctx.filter = "none";
+      if (btnSlider[ioffset] == sliderY && selectX == ioffset) {
+        ctx.filter = "brightness(150%)";
+        if (mouseFocus != 0) ctx.filter = "brightness(75%)";
+      }
+
+      ctx.fillRect(
+        (i * tileSize) + selectOffsetX + 5 - (scrollX % 30),
+        (critData.length + 2) * tileSize + 5 + (btnSlider[ioffset] * 10),
+        20,
+        6,
+      );
+
+      ctx.filter = "none";
       ctx.letterSpacing = "1px";
       ctx.textAlign = "center";
-      ctx.font = "12px Arial";
+      ctx.font = "bold 14px Arial";
 
-      if (!btnPressed[ioffset]) ctx.filter = "brightness(50%)";
-
+      let sliderText = btnSlider[ioffset] > 2 ? "+" : "";
+      sliderText += (btnSlider[ioffset] - 3).toString();
       ctx.fillText(
-        btnAccuracy[ioffset].toString(),
+        sliderText,
         (i * tileSize) + selectOffsetX + 15 - (scrollX % 30),
-        (critData.length + 2) * tileSize + 20,
+        (critData.length + 5) * tileSize - 3,
       );
     }
   }
+
   ctx.filter = "none";
 }
 
@@ -707,27 +904,34 @@ function drawMeterCanvas() {
 
   scoreText.style.color = "#00B4FF";
 
-  if (+scoreText.textContent > 60) {
-    if (+scoreText.textContent > 80) {
+  const minscore = Math.floor(finalMinScore);
+
+  if (Math.floor(finalMaxScore) != minscore) {
+    ctx.fillStyle = "#ffffff80";
+    ctx.fillRect(9, 9, 214 * (Math.floor(finalMaxScore) / 100), 30);
+  }
+
+  if (minscore > 60) {
+    if (minscore > 80) {
       ctx.fillStyle = "#FF0000";
-      ctx.fillRect(9, 9, 214 * (+scoreText.textContent / 100), 30);
+      ctx.fillRect(9, 9, 214 * (minscore / 100), 30);
       ctx.fillStyle = "#00BE00";
       ctx.fillRect(9, 9, 214 * 0.8, 30);
     } else {
       ctx.fillStyle = "#00BE00";
-      ctx.fillRect(9, 9, 214 * (+scoreText.textContent / 100), 30);
+      ctx.fillRect(9, 9, 214 * (minscore / 100), 30);
     }
 
     ctx.fillStyle = "#00B4FF";
     ctx.fillRect(9, 9, 214 * 0.6, 30);
   } else {
     ctx.fillStyle = "#00B4FF";
-    ctx.fillRect(9, 9, 214 * (+scoreText.textContent / 100), 30);
+    ctx.fillRect(9, 9, 214 * (minscore / 100), 30);
   }
 
-  if (+scoreText.textContent >= 80) {
+  if (minscore >= 80) {
     scoreText.style.color = "#FF0000";
-  } else if (+scoreText.textContent >= 60) {
+  } else if (minscore >= 60) {
     scoreText.style.color = "#00BE00";
   }
 
@@ -743,14 +947,14 @@ function drawMeterCanvas() {
 function updateText() {
   if (!scoreText) return;
   if (!pressText) return;
-  if (!diffText) return;
 
-  scoreText.textContent = Math.floor(finalScore).toString();
-  pressText.textContent = "Presses: " + pressCounter.toString();
-  if (finalScore != prevScore && prevScore !== undefined) {
-    diffText.textContent = finalScore >= prevScore ? "+" : "";
-    diffText.textContent += (finalScore - prevScore).toFixed(2).toString();
+  let scoretxt = Math.floor(finalMinScore).toString();
+  if (Math.floor(finalMinScore) != Math.floor(finalMaxScore)) {
+    scoretxt += "-" + Math.floor(finalMaxScore).toString();
   }
+
+  scoreText.textContent = scoretxt;
+  pressText.textContent = "Presses: " + pressCounter.toString();
 
   const temp = document.createElement("table");
   temp.className = "data-table";
@@ -838,7 +1042,7 @@ function updateText() {
               text = "0%";
             } else {
               text =
-                (Math.floor(critData[i - 1].weight / maxScore * 10000) / 100) +
+                (Math.floor(critData[i - 1].weight / sumScore * 10000) / 100) +
                 "%";
             }
           }
@@ -852,10 +1056,14 @@ function updateText() {
           break;
         }
         case 4: {
-          cell.style.width = "120px";
+          cell.style.width = "130px";
           if (i == 0) text = "Hit Score";
           else {
-            text = critData[i - 1].score.toString();
+            let hittxt = critData[i - 1].minscore.toString();
+            if (critData[i - 1].minscore != critData[i - 1].maxscore) {
+              hittxt += " - " + critData[i - 1].maxscore.toString();
+            }
+            text = hittxt;
           }
           break;
         }
@@ -868,12 +1076,19 @@ function updateText() {
           break;
         }
         case 6: {
-          cell.style.width = "120px";
+          cell.style.width = "160px";
           if (i == 0) text = "Result";
           else {
-            text =
-              (Math.floor(critData[i - 1].result * 10000) / 10000).toString() +
+            let restxt = (Math.floor(critData[i - 1].minresult * 100) / 100)
+              .toString() +
               "%";
+            if (critData[i - 1].minscore != critData[i - 1].maxscore) {
+              restxt += " - " +
+                (Math.floor(critData[i - 1].maxresult * 100) / 100)
+                  .toString() +
+                "%";
+            }
+            text = restxt;
           }
           break;
         }
@@ -927,6 +1142,14 @@ chartCanvas.addEventListener("mousemove", (e) => {
     Math.floor(scrollX / tileSize);
   selectY = Math.floor(e.offsetY / 30) - critData.length - 1;
 
+  const sliderTop = (critData.length + 2) * tileSize + 5;
+  const sliderBottom = sliderTop + 60;
+  const rawSliderPos = Math.floor((e.offsetY + 7) / 10) * 10 - 5;
+
+  sliderY =
+    (Math.min(Math.max(rawSliderPos, sliderTop), sliderBottom) - sliderTop) /
+    10;
+
   document.body.style.cursor = "default";
   if (e.offsetX > selectOffsetX && selectY < 0) {
     document.body.style.cursor = "grab";
@@ -942,21 +1165,20 @@ chartCanvas.addEventListener("mousemove", (e) => {
   if (btnActive[selectX]) {
     if (mouseFocus == 2 && selectY == 0) {
       btnPressed[selectX] = drawState;
-      if (prevSelectX != selectX || prevSelectY != selectY) updatePage(true);
-    } else if ((mouseFocus == 3 || mouseFocus == 4)) {
-      btnAccuracy[selectX] = drawAccState;
-      if (selectX != prevSelectX || selectY != 1) {
-        mouseFocus = 4;
-      }
-      if (prevSelectX != selectX || prevSelectY != selectY) updatePage(true);
+      if (prevSelectX != selectX || prevY != e.offsetY) updatePage(true);
+    } else if ((mouseFocus == 3 || mouseFocus == 4) && btnPressed[selectX]) {
+      btnSlider[selectX] = sliderY;
+
+      mouseFocus = 4;
+      updatePage(true);
     } else {
-      if (prevSelectX != selectX || prevSelectY != selectY) updatePage(false);
+      if (prevSelectX != selectX || prevY != e.offsetY) updatePage(false);
     }
   } else {
-    if (prevSelectX != selectX || prevSelectY != selectY) updatePage(false);
+    if (prevSelectX != selectX || prevY != e.offsetY) updatePage(false);
   }
   prevSelectX = selectX;
-  prevSelectY = selectY;
+  prevY = e.offsetY;
 });
 
 chartCanvas.addEventListener("mousedown", (e) => {
@@ -978,13 +1200,17 @@ chartCanvas.addEventListener("mousedown", (e) => {
     mouseFocus = 2;
     drawState = !btnPressed[selectX];
     btnPressed[selectX] = !btnPressed[selectX];
-  } else if (selectY == 1) {
-    if (gd.inputs[selectX].multi == 0) {
+  } else if (selectY > 0) {
+    if (gd.inputs[selectX].multi == 0 || !btnPressed[selectX]) {
       mouseFocus = 1;
       return;
     }
+
     mouseFocus = 3;
-    drawAccState = btnAccuracy[selectX];
+
+    btnSlider[selectX] = sliderY;
+
+    updatePage(true);
   }
 
   if (document.body.style.cursor) {
@@ -1003,12 +1229,14 @@ chartCanvas.addEventListener("mouseup", (e) => {
     selectY = Math.floor(e.offsetY / 30) - critData.length - 1;
   }
 
+  if (mouseFocus == 3 || mouseFocus == 4) {
+    if (e.offsetY < (critData.length + 2) * tileSize + 72) {
+      btnSlider[selectX] = sliderY;
+    }
+  }
+
   if (mouseFocus == 3 && btnPressed[selectX] && btnActive[selectX]) {
-    const newNum = prompt(
-      "Enter number 0-100",
-      btnAccuracy[selectX].toString(),
-    );
-    if (!isNaN(Number(newNum))) btnAccuracy[selectX] = Number(newNum);
+    // place here
   }
   mouseFocus = 0;
   updatePage(true);
@@ -1019,7 +1247,7 @@ chartCanvas.addEventListener("mouseleave", () => {
   selectX = -1;
   selectY = -1;
   prevSelectX = selectX;
-  prevSelectY = selectY;
+  prevY = selectY;
   mouseFocus = 0;
   updatePage(false);
 });

@@ -60,10 +60,9 @@ body {
 }
 
 .meter-container p {
-  margin: 0 100px 0 0;
+  margin: 0 0px 0 0;
   padding: 0 0 20px 0;
-  align-self: flex-end;
-  text-align: right;
+  text-align: center;
   -webkit-text-stroke: 0.75px white;
 }
 
@@ -90,7 +89,7 @@ canvas {
 .score-text {
   font-family: Kurokane;
   font-size: 32px;
-  text-align: right;
+  text-align: center;
   letter-spacing: -2px;
   color: #00b4ff;
 }

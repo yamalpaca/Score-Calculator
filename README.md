@@ -1,6 +1,6 @@
 # RHM Score Calculator
 
-v.0.5.1
+v.0.6.0
 
 yamalpaca
 
@@ -10,12 +10,20 @@ yamalpaca
 
 - Select a Megamix minigame from the dropdown menu to pull data from
 - Click a button on the chart to toggle it and adjust your score
-- Click on the number underneath a button to set its accuracy
+- Adjust a slider underneath a button set its timing accuracy
 - Drag the chart with your mouse to scroll
 
 ---
 
 ## Change Log
+
+v.0.6.0
+
+- added sliders to adjust the timing for each press
+- removed difference text
+- edited separators
+- removed a separator
+- adjusted chart window size
 
 v.0.5.1
 

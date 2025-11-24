@@ -3426,9 +3426,6 @@ export const gameData: Game[] = [
         { ...inD, criteria: 2, button: 7 },
       ]),
     ],
-    separators: [
-      { index: 43 },
-    ],
   },
   { // Right-Hand Remix
     name: "Right-Hand Remix",
@@ -4875,4 +4872,123 @@ export const gameData: Game[] = [
       ]),
     ],
   },
+];
+
+export interface EL {
+  main: number[];
+  hold?: number[];
+  release?: number[];
+  type?: number;
+}
+
+export const timingData: EL[] = [
+  { main: [56, 34, 38] }, // Karate Man
+  { main: [55, 32, 37], release: [51, 25, 33], type: 1 }, // Fillbots
+  { main: [57, 34, 37] }, // Air Rally
+  { main: [57, 39, 42] }, // Catchy Tune
+  { main: [57, 37, 39] }, // Rhythm Tweezers
+  { main: [51, 22, 31] }, // Glee Club
+  { main: [58, 38, 39] }, // Figure Fighter
+  { main: [57, 39, 42] }, // Fruit Basket
+  { main: [58, 42, 43] }, // The Clappy Trio
+  { main: [58, 39, 40] }, // Shoot-'em-up
+  { main: [58, 37, 38] }, // Micro-Row
+  { main: [58, 42, 43] }, // First Contact
+  { main: [58, 42, 43] }, // Bunny Hop
+  { main: [57, 37, 39], release: [58, 44, 45] }, // Airboarder
+  { main: [58, 42, 43] }, // Exhibition Match
+  { main: [56, 37, 40] }, // Tongue Lashing
+  { main: [56, 37, 40] }, // Sneaky Spirits
+  { main: [55, 34, 38] }, // Rhythm Rally
+  { main: [56, 37, 40] }, // Flipper-Flop
+  { main: [25, -10, 1] }, // LumBEARjack
+  { main: [18, -25, -12] }, // Power Calligraphy
+  { main: [58, 42, 43] }, // Blue Birds
+  { main: [], type: 2 }, // Flock Step
+  { main: [57, 39, 42], type: 3 }, // Super Samurai Slice
+  { main: [58, 42, 43] }, // Spaceball
+  { main: [57, 44, 46] }, // Dog Ninja
+  { main: [58, 42, 43] }, // Hole in One
+  { main: [57, 39, 42] }, // Sumo Brothers
+  { main: [] }, // Lush Remix
+  { main: [56, 34, 38] }, // Karate Man Returns!
+  { main: [55, 32, 37], release: [51, 25, 33], type: 1 }, // Fillbots 2
+  { main: [57, 34, 37] }, // Air Rally 2
+  { main: [57, 39, 42] }, // Catchy Tune 2
+  { main: [] }, // Honeybee Remix
+  { main: [57, 37, 39], type: 4 }, // Rhythm Tweezers 2
+  { main: [51, 22, 31] }, // Glee Club 2
+  { main: [58, 38, 39] }, // Figure Fighter 2
+  { main: [57, 39, 42] }, // Fruit Basket 2
+  { main: [] }, // Machine Remix
+  { main: [58, 42, 43] }, // The Clappy Trio 2
+  { main: [58, 39, 40] }, // Shoot-'em-up 2
+  { main: [58, 37, 38] }, // Micro-Row 2
+  { main: [58, 42, 43] }, // Second Contact
+  { main: [] }, // Citrus Remix
+  { main: [58, 42, 43], release: [57, 37, 38] }, // Rat Race
+  { main: [58, 42, 43], type: 5 }, // Fan Club
+  { main: [58, 42, 43] }, // Working Dough
+  { main: [58, 42, 43] }, // Animal Acrobat
+  { main: [] }, // Donut Remix
+  { main: [56, 37, 40] }, // Sneaky Spirits 2
+  { main: [55, 34, 38] }, // Rhythm Rally 2
+  { main: [56, 37, 40] }, // Flipper-Flop 2
+  { main: [25, -10, 1] }, // LumBEARjack 2
+  { main: [] }, // Barbershop Remix
+  { main: [56, 37, 40] }, // Tap Trial
+  { main: [57, 34, 37] }, // Frog Hop
+  { main: [57, 39, 42] }, // Ringside
+  { main: [57, 39, 42] }, // Tangotronic 3000
+  { main: [] }, // Songbird Remix
+  { main: [58, 42, 43] }, // Ninja Bodyguard
+  { main: [56, 37, 40] }, // Freeze Frame
+  { main: [58, 42, 43] }, // Launch Party
+  { main: [58, 42, 43], hold: [57, 37, 39], release: [57, 37, 39] }, // Pajama Party
+  { main: [58, 42, 43] }, // Marching Orders
+  { main: [55, 32, 37] }, // Munchy Monk
+  { main: [57, 39, 42] }, // See-Saw
+  { main: [58, 42, 43] }, // Blue Bear
+  { main: [58, 42, 43] }, // Space Dance
+  { main: [58, 44, 45] }, // Lockstep
+  { main: [58, 42, 43], type: 6 }, // Cheer Readers
+  { main: [58, 42, 43], type: 3 }, // Kitties!
+  { main: [58, 42, 43] }, // The Snappy Trio
+  { main: [58, 42, 43], type: 5 }, // Fan Club 2
+  { main: [58, 38, 39] }, // Figure Fighter 3
+  { main: [58, 42, 43] }, // Jungle Gymnast
+  { main: [] }, // Left-Hand Remix
+  { main: [56, 37, 40] }, // Tap Trial 2
+  { main: [57, 34, 37] }, // Jumpin' Jazz
+  { main: [58, 42, 43] }, // Hole in One 2
+  { main: [57, 39, 42], type: 3 }, // Super Samurai Slice 2
+  { main: [] }, // Right-Hand Remix
+  { main: [58, 42, 43] }, // Cosmic Dance
+  { main: [55, 34, 38] }, // Cosmic Rhythm Rally
+  { main: [58, 42, 43] }, // Working Dough 2
+  { main: [56, 34, 38], release: [56, 30, 33], type: 1 }, // Karate Man Senior
+  { main: [] }, // Final Remix
+  { main: [], type: 2 }, // Bouncy Road
+  { main: [] }, // Night Walk
+  { main: [] }, // Quiz Show
+  { main: [58, 44, 45], release: [57, 39, 42] }, // The Dazzles
+  { main: [54, 32, 38] }, // Big Rock Finish
+  { main: [56, 34, 38], release: [56, 30, 33], type: 1 }, // Karate Man Kicks!
+  { main: [58, 44, 45] }, // Built to Scale
+  { main: [57, 44, 46] }, // Double Date
+  { main: [56, 37, 40] }, // Catch of the Day
+  { main: [58, 44, 45] }, // Fork Lifter
+  { main: [56, 42, 45] }, // Love Rap
+  { main: [57, 42, 42] }, // Bossa Nova
+  { main: [55, 37, 42] }, // Screwbot Factory
+  { main: [58, 37, 38] }, // Board Meeting
+  { main: [58, 46, 48], hold: [58, 42, 43], type: 7 }, // Samurai Slice
+  { main: [58, 39, 40] }, // Packing Pests
+  { main: [57, 30, 32] }, // Monkey Watch
+  { main: [56, 34, 38], release: [56, 30, 33] }, // Karate Man Combos!
+  { main: [], type: 2 }, // Coin Toss
+  { main: [58, 42, 43] }, // Sick Beats
+  { main: [] }, // Charging Chicken
+  { main: [57, 44, 46] }, // Clap Trap
+  { main: [56, 42, 45] }, // Tutorial
 ];
