@@ -12,7 +12,7 @@ yamalpaca
 - Click a button on the chart to toggle it and adjust your score
 - Adjust a slider underneath a button set its timing accuracy
 - Drag the chart with your mouse to scroll
-- Toggle the Skill Star button only its image is large
+- Toggle the Skill Star button only when its image is large
 
 ---
 
