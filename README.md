@@ -1,6 +1,6 @@
 # RHM Score Calculator
 
-v.0.7.0
+v.0.7.1
 
 yamalpaca
 
@@ -17,6 +17,10 @@ yamalpaca
 ---
 
 ## Change Log
+
+v.0.7.1
+
+- fixed lumBEARjack minigames
 
 v.0.7.0
 

@@ -141,7 +141,7 @@ let dataTable = document.createElement("div");
 chartContainer.append(dataTable);
 
 const creditsText = document.createElement("h1");
-creditsText.textContent = "yamalpaca - v.0.7.0";
+creditsText.textContent = "yamalpaca - v.0.7.1";
 creditsText.className = "credits";
 document.body.append(creditsText);
 
@@ -266,6 +266,11 @@ function updateData() {
       (!btnPressed[i - 1] || !btnActive[i - 1]));
     if (btnType[i - 1] == 1) {
       if ([0, 6].includes(btnSlider[i - 1]) && gd.inputs[i - 1].button == 4) {
+        btnActive[i] = false;
+      }
+    }
+    if (btnType[i - 1] == 8) {
+      if ([0, 6].includes(btnSlider[i - 1]) && gd.inputs[i].combo) {
         btnActive[i] = false;
       }
     }
@@ -678,6 +683,14 @@ function drawChart() {
       if (
         [0, 6].includes(btnSlider[ioffset]) && input.button == 4 &&
         btnType[ioffset] == 1
+      ) {
+        ctx.lineWidth = 4;
+        ctx.setLineDash([4, 5]);
+      }
+
+      if (
+        [0, 6].includes(btnSlider[ioffset]) && btnType[ioffset] == 8 &&
+        input.square
       ) {
         ctx.lineWidth = 4;
         ctx.setLineDash([4, 5]);

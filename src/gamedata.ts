@@ -4901,7 +4901,7 @@ export const timingData: EL[] = [
   { main: [56, 37, 40] }, // Sneaky Spirits
   { main: [55, 34, 38] }, // Rhythm Rally
   { main: [56, 37, 40] }, // Flipper-Flop
-  { main: [25, -10, 1] }, // LumBEARjack
+  { main: [25, -10, 1], type: 8 }, // LumBEARjack
   { main: [18, -25, -12] }, // Power Calligraphy
   { main: [58, 42, 43] }, // Blue Birds
   { main: [], type: 2 }, // Flock Step
@@ -4934,7 +4934,7 @@ export const timingData: EL[] = [
   { main: [56, 37, 40] }, // Sneaky Spirits 2
   { main: [55, 34, 38] }, // Rhythm Rally 2
   { main: [56, 37, 40] }, // Flipper-Flop 2
-  { main: [25, -10, 1] }, // LumBEARjack 2
+  { main: [25, -10, 1], type: 8 }, // LumBEARjack 2
   { main: [] }, // Barbershop Remix
   { main: [56, 37, 40] }, // Tap Trial
   { main: [57, 34, 37] }, // Frog Hop
