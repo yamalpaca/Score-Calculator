@@ -8,6 +8,7 @@ import btnimg from "./images/btnimg.png";
 import gameimg from "./images/gameicons.png";
 import inputimg from "./images/inputimg.png";
 import meterimg from "./images/meterimg.png";
+import starimg from "./images/starimg.png";
 import "./style.css";
 
 const customFont = new FontFace("SeuratPro", "/src/fonts/FOT-SeuratPro-B.otf");
@@ -74,6 +75,10 @@ let dragStartX: number;
 let dragStartScrollX: number;
 let drawState: boolean;
 let mouseFocus: number;
+let starPos: number;
+let starPressed: boolean;
+let starActive: boolean;
+let starState: number;
 
 const critData: Criteria[] = [];
 
@@ -136,7 +141,7 @@ let dataTable = document.createElement("div");
 chartContainer.append(dataTable);
 
 const creditsText = document.createElement("h1");
-creditsText.textContent = "yamalpaca - v.0.6.1";
+creditsText.textContent = "yamalpaca - v.0.7.0";
 creditsText.className = "credits";
 document.body.append(creditsText);
 
@@ -148,6 +153,8 @@ const meter = new Image();
 meter.src = meterimg;
 const gameIcons = new Image();
 gameIcons.src = gameimg;
+const starIcons = new Image();
+starIcons.src = starimg;
 
 const btnPressed: boolean[] = [];
 const btnActive: boolean[] = [];
@@ -170,6 +177,10 @@ function loadGame(index: number) {
   finalMinScore = 100;
   finalMaxScore = 100;
   sumScore = 0;
+  starPos = 0;
+  starPressed = true;
+  starActive = true;
+  starState = 3;
   critData.splice(0, critData.length);
   btnPressed.splice(0, btnPressed.length);
   btnActive.splice(0, btnActive.length);
@@ -201,7 +212,7 @@ function updatePage(all: boolean) {
     if (chartCanvas.width > globalThis.innerWidth - 15) {
       chartCanvas.width = globalThis.innerWidth - 15;
     }
-    chartCanvas.height = tileSize * (critData.length + 2) + 95;
+    chartCanvas.height = tileSize * (critData.length + 2) + 106;
 
     maxWidth = Math.floor((chartCanvas.width - selectOffsetX) / tileSize);
 
@@ -236,6 +247,7 @@ function updateData() {
   }
 
   let gameid = gd.image;
+  starActive = true;
 
   for (let i: number = 0; i < gd.inputs.length; i++) {
     const input = gd.inputs[i];
@@ -255,6 +267,49 @@ function updateData() {
     if (btnType[i - 1] == 1) {
       if ([0, 6].includes(btnSlider[i - 1]) && gd.inputs[i - 1].button == 4) {
         btnActive[i] = false;
+      }
+    }
+
+    if (btnPressed[i] && btnActive[i]) {
+      if (btnSlider[i] == 0) {
+        if (btnType[i] == 2) btnSlider[i] = 1;
+        if (btnType[i] == 3 && [6, 7].includes(gd.inputs[i].button)) {
+          btnSlider[i] = 1;
+        }
+        if (btnType[i] == 4 && [4, 6].includes(gd.inputs[i].button)) {
+          btnSlider[i] = 1;
+        }
+        if (btnType[i] == 5 && [5, 7].includes(gd.inputs[i].button)) {
+          btnSlider[i] = 1;
+        }
+        if (btnType[i] == 6 && [4, 6].includes(gd.inputs[i].button)) {
+          btnSlider[i] = 1;
+        }
+      }
+      if (btnSlider[i] == 6) {
+        if (btnType[i] == 2) {
+          btnSlider[i] = 5;
+        }
+        if (btnType[i] == 3 && [6, 7].includes(gd.inputs[i].button)) {
+          btnSlider[i] = 5;
+        }
+        if (btnType[i] == 4 && [4, 6].includes(gd.inputs[i].button)) {
+          btnSlider[i] = 5;
+        }
+        if (btnType[i] == 5 && [5, 7].includes(gd.inputs[i].button)) {
+          btnSlider[i] = 5;
+        }
+        if (btnType[i] == 6 && [4, 6].includes(gd.inputs[i].button)) {
+          btnSlider[i] = 5;
+        }
+      }
+    }
+    if (input.criteria == critData.length - 1) {
+      starPos = i;
+      if (!btnActive[i] || !btnPressed[i] || [0, 6].includes(btnSlider[i])) {
+        starActive = false;
+        starPressed = false;
+        starState = 0;
       }
     }
 
@@ -308,20 +363,6 @@ function updateData() {
             }
           }
           maxacc = 60;
-
-          if (btnType[i] == 2) btnSlider[i] = 1;
-          if (btnType[i] == 3 && [6, 7].includes(gd.inputs[i].button)) {
-            btnSlider[i] = 1;
-          }
-          if (btnType[i] == 4 && [4, 6].includes(gd.inputs[i].button)) {
-            btnSlider[i] = 1;
-          }
-          if (btnType[i] == 5 && [5, 7].includes(gd.inputs[i].button)) {
-            btnSlider[i] = 1;
-          }
-          if (btnType[i] == 6 && [4, 6].includes(gd.inputs[i].button)) {
-            btnSlider[i] = 1;
-          }
         }
 
         if (btnSlider[i] == 6) {
@@ -337,20 +378,6 @@ function updateData() {
               maxacc = timingData[gameid].release?.[2] ?? maxacc;
             }
           }
-
-          if (btnType[i] == 2) btnSlider[i] = 5;
-          if (btnType[i] == 3 && [6, 7].includes(gd.inputs[i].button)) {
-            btnSlider[i] = 5;
-          }
-          if (btnType[i] == 4 && [4, 6].includes(gd.inputs[i].button)) {
-            btnSlider[i] = 5;
-          }
-          if (btnType[i] == 5 && [5, 7].includes(gd.inputs[i].button)) {
-            btnSlider[i] = 5;
-          }
-          if (btnType[i] == 6 && [4, 6].includes(gd.inputs[i].button)) {
-            btnSlider[i] = 5;
-          }
         }
 
         if ([1, 5].includes(btnSlider[i])) {
@@ -362,10 +389,11 @@ function updateData() {
           maxacc = 94;
         }
       }
+
+      critData[input.criteria].hits += input.multi;
       btnMinAccuracy[i] = minacc;
       btnMaxAccuracy[i] = maxacc;
 
-      critData[input.criteria].hits += input.multi;
       critData[input.criteria].minscore += btnMinAccuracy[i] * input.multi;
       critData[input.criteria].maxscore += btnMaxAccuracy[i] * input.multi;
 
@@ -375,6 +403,44 @@ function updateData() {
         critData[input.extracrit].maxscore += btnMaxAccuracy[i];
       }
     }
+  }
+
+  const starCrit = critData[critData.length - 1];
+  const starReq = starCrit.total * 90;
+
+  if (starActive) {
+    starState = starPressed ? 2 : 1;
+    if (starCrit.maxscore < starCrit.total * 90) {
+      starActive = false;
+      starPressed = false;
+      starState = 0;
+    } else {
+      if (starCrit.minscore >= starCrit.total * 90) {
+        starPressed = true;
+        starState = 3;
+      }
+    }
+
+    starCrit.minscore -= btnMinAccuracy[starPos] * gd.inputs[starPos].multi;
+    starCrit.maxscore -= btnMaxAccuracy[starPos] * gd.inputs[starPos].multi;
+    if (starPressed) {
+      btnMinAccuracy[starPos] = (starReq - starCrit.minscore) /
+        gd.inputs[starPos].multi;
+      if (btnMinAccuracy[starPos] < 80) {
+        btnMinAccuracy[starPos] = 80;
+      }
+      btnMaxAccuracy[starPos] = 100;
+    }
+    if (
+      !starPressed &&
+      starCrit.maxscore +
+            (btnMaxAccuracy[starPos] * gd.inputs[starPos].multi) >= starReq
+    ) {
+      btnMaxAccuracy[starPos] =
+        (starReq - starCrit.maxscore) / gd.inputs[starPos].multi - 1;
+    }
+    starCrit.minscore += btnMinAccuracy[starPos] * gd.inputs[starPos].multi;
+    starCrit.maxscore += btnMaxAccuracy[starPos] * gd.inputs[starPos].multi;
   }
 
   critData.forEach((c: Criteria) => {
@@ -707,7 +773,7 @@ function drawInterface() {
     selectOffsetX,
     tileSize * (critData.length + 1),
     gd.inputs.length * tileSize,
-    tileSize * 2 + 95,
+    tileSize * 2 + 110,
   );
 
   for (let i: number = -loadDist; i < maxWidth + loadDist + 1; i++) {
@@ -813,22 +879,23 @@ function drawInterface() {
     if (!input) continue;
 
     ctx.filter = "brightness(100%)";
-    /*
-    const sep = gd.separators?.find((s) => s.index === ioffset);
-    if (sep) {
-      if (sep.index > 0) {
-        const drawX = (ioffset * tileSize) + selectOffsetX - scrollX;
-        ctx.lineWidth = 0.5;
-        ctx.strokeStyle = "white";
-        ctx.beginPath();
-        ctx.setLineDash([5, 5]);
-        ctx.moveTo(drawX, (critData.length + 1) * tileSize + 0.5);
-        ctx.lineTo(drawX, (critData.length + 3) * tileSize + 95);
-        ctx.stroke();
+
+    if (ioffset == starPos) {
+      if ([1, 2].includes(starState) && selectX == starPos && sliderY > 6) {
+        ctx.filter = "brightness(150%)";
+        if (mouseFocus != 0) ctx.filter = "brightness(75%)";
       }
+      drawIcon(
+        (i * tileSize) + selectOffsetX - (scrollX % 30),
+        (critData.length + 4) * tileSize + 14,
+        starState,
+        0,
+        starIcons,
+        chartCanvas,
+      );
     }
-    ctx.setLineDash([]);
-    */
+
+    ctx.filter = "brightness(100%)";
 
     if (!btnActive[ioffset]) {
       drawIcon(
@@ -865,7 +932,7 @@ function drawInterface() {
       if (btnSlider[ioffset] == 3) ctx.fillStyle = "#FF4699";
 
       ctx.filter = "none";
-      if (btnSlider[ioffset] == sliderY && selectX == ioffset) {
+      if (btnSlider[ioffset] == sliderY && selectX == ioffset && selectY > 0) {
         ctx.filter = "brightness(150%)";
         if (mouseFocus != 0) ctx.filter = "brightness(75%)";
       }
@@ -882,13 +949,16 @@ function drawInterface() {
       ctx.textAlign = "center";
       ctx.font = "bold 14px Arial";
 
-      let sliderText = btnSlider[ioffset] > 2 ? "+" : "";
-      sliderText += (btnSlider[ioffset] - 3).toString();
-      ctx.fillText(
-        sliderText,
-        (i * tileSize) + selectOffsetX + 15 - (scrollX % 30),
-        (critData.length + 5) * tileSize - 3,
-      );
+      if (ioffset != starPos) {
+        let sliderText = "";
+        if (btnSlider[ioffset] > 2) sliderText = "+";
+        sliderText += (btnSlider[ioffset] - 3).toString();
+        ctx.fillText(
+          sliderText,
+          (i * tileSize) + selectOffsetX + 15 - (scrollX % 30),
+          (critData.length + 5) * tileSize + 5,
+        );
+      }
     }
   }
 
@@ -950,7 +1020,7 @@ function updateText() {
 
   let scoretxt = Math.floor(finalMinScore).toString();
   if (Math.floor(finalMinScore) != Math.floor(finalMaxScore)) {
-    scoretxt += "-" + Math.floor(finalMaxScore).toString();
+    scoretxt += " - " + Math.floor(finalMaxScore).toString();
   }
 
   scoreText.textContent = scoretxt;
@@ -1110,6 +1180,7 @@ btnIcons.onload = () => updatePage(true);
 inputIcons.onload = () => updatePage(true);
 meter.onload = () => updatePage(true);
 gameIcons.onload = () => updatePage(true);
+starIcons.onload = () => updatePage(true);
 document.fonts.ready.then(() => {
   updatePage(true);
 });
@@ -1143,11 +1214,9 @@ chartCanvas.addEventListener("mousemove", (e) => {
   selectY = Math.floor(e.offsetY / 30) - critData.length - 1;
 
   const sliderTop = (critData.length + 2) * tileSize + 5;
-  const sliderBottom = sliderTop + 60;
   const rawSliderPos = Math.floor((e.offsetY + 7) / 10) * 10 - 5;
 
-  sliderY =
-    (Math.min(Math.max(rawSliderPos, sliderTop), sliderBottom) - sliderTop) /
+  sliderY = ((Math.max(rawSliderPos, sliderTop)) - sliderTop) /
     10;
 
   document.body.style.cursor = "default";
@@ -1167,9 +1236,9 @@ chartCanvas.addEventListener("mousemove", (e) => {
       btnPressed[selectX] = drawState;
       if (prevSelectX != selectX || prevY != e.offsetY) updatePage(true);
     } else if ((mouseFocus == 3 || mouseFocus == 4) && btnPressed[selectX]) {
-      btnSlider[selectX] = sliderY;
-
+      btnSlider[selectX] = Math.min(sliderY, 6);
       mouseFocus = 4;
+
       updatePage(true);
     } else {
       if (prevSelectX != selectX || prevY != e.offsetY) updatePage(false);
@@ -1206,9 +1275,15 @@ chartCanvas.addEventListener("mousedown", (e) => {
       return;
     }
 
-    mouseFocus = 3;
-
-    btnSlider[selectX] = sliderY;
+    if (
+      selectX == starPos && e.offsetY > (critData.length + 5) * tileSize - 18
+    ) {
+      mouseFocus = 1;
+      if (starActive) starPressed = !starPressed;
+    } else {
+      mouseFocus = 3;
+      btnSlider[selectX] = Math.min(sliderY, 6);
+    }
 
     updatePage(true);
   }
@@ -1231,7 +1306,9 @@ chartCanvas.addEventListener("mouseup", (e) => {
 
   if (mouseFocus == 3 || mouseFocus == 4) {
     if (e.offsetY < (critData.length + 2) * tileSize + 72) {
-      btnSlider[selectX] = sliderY;
+      if (btnActive[selectX] && btnPressed[selectX]) {
+        btnSlider[selectX] = Math.min(sliderY, 6);
+      }
     }
   }
 

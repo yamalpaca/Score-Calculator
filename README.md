@@ -1,6 +1,6 @@
 # RHM Score Calculator
 
-v.0.6.1
+v.0.7.0
 
 yamalpaca
 
@@ -12,10 +12,16 @@ yamalpaca
 - Click a button on the chart to toggle it and adjust your score
 - Adjust a slider underneath a button set its timing accuracy
 - Drag the chart with your mouse to scroll
+- Toggle the Skill Star button only its image is large
 
 ---
 
 ## Change Log
+
+v.0.7.0
+
+- added skill star
+- adjusted text format
 
 v.0.6.1
 
