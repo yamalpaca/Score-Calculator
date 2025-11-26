@@ -337,12 +337,14 @@ function updateData() {
           [0, 6].includes(btnData[i - 1].slider) && gd.inputs[i - 1].button == 4
         ) {
           btnData[i].active = false;
+          if (btnData[i].pressed) pressCounter++;
         }
         if (
           debugMode && btnData[i - 1].debug <= 60 &&
           gd.inputs[i - 1].button == 4
         ) {
           btnData[i].active = false;
+          if (btnData[i].pressed) pressCounter++;
         }
       }
       if (btnData[i - 1].type == 8) {
@@ -429,7 +431,7 @@ function updateData() {
       i < gd.inputs.length - 1
     ) {
       if ([5, 7].includes(gd.inputs[i + 1].button)) {
-        if (btnData[i + 1].pressed == false || btnData[i + 1].active == false) {
+        if (btnData[i + 1].pressed == false) {
           pressCounter++;
         }
       } else {
