@@ -573,6 +573,9 @@ export const gameData: Game[] = [
         { ...inD, criteria: 1, square: true },
       ]),
     ],
+    separators: [
+      { index: 18 },
+    ],
   },
   { // Power Calligraphy
     name: "Power Calligraphy",

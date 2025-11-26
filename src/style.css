@@ -65,7 +65,7 @@ body {
 
 .meter-container p {
   margin: 0 0 0 0;
-  padding: 0 0 15px 0;
+  padding: 0 0 25px 0;
   text-align: center;
   -webkit-text-stroke: 0.75px white;
 }
@@ -111,6 +111,7 @@ canvas {
   border: 2px solid white;
   padding: 10px;
   display: inline-block;
+  margin: 10px 0 0 0;
 }
 
 .data-table {
@@ -123,6 +124,7 @@ canvas {
   position: relative;
   width: 300px;
   cursor: pointer;
+  z-index: 9999;
 }
 
 .selected {
@@ -165,4 +167,32 @@ canvas {
   color: white;
   position: absolute;
   right: 8px;
+}
+
+.table-buttons {
+  position: absolute;
+  top: -25px;
+  left: 0px;
+  width: 100%;
+
+  display: flex;
+  gap: 6px;
+  align-items: "center";
+}
+
+.table-buttons button {
+  color: white;
+  font: 12px SeuratPro;
+  border: 1.5px solid white;
+  border-radius: 8px;
+  height: 28px;
+  align-items: "center";
+}
+
+.debug-right {
+  margin-left: auto; /* pushes it to the right */
+}
+
+.table-buttons button:hover {
+  filter: brightness(150%); /* Brightens the button by 20% on hover */
 }

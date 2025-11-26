@@ -34,6 +34,16 @@ const critPal: string[] = [
   "#FFE002",
 ];
 
+interface Button {
+  type: number;
+  pressed: boolean;
+  active: boolean;
+  minacc: number;
+  maxacc: number;
+  slider: number;
+  debug: number;
+}
+
 const tileSize: number = 30;
 const selectOffsetX: number = 90;
 const loadDist = 1;
@@ -79,8 +89,13 @@ let starPos: number;
 let starPressed: boolean;
 let starActive: boolean;
 let starState: number;
+let debugMode: boolean;
+let scrollBarX: number;
+let scrollBarW: number;
+let scrollBarDrag: number;
 
 const critData: Criteria[] = [];
+const btnData: Button[] = [];
 
 const titleSubText = document.createElement("h1");
 titleSubText.textContent = "Rhythm Heaven Megamix";
@@ -137,11 +152,44 @@ scoreText.textContent = "";
 scoreText.className = "score-text";
 meterContainer.append(scoreText);
 
+const fillBtn = document.createElement("button");
+fillBtn.textContent = "Set to 100";
+fillBtn.style.backgroundColor = "#da0000ff";
+
+const clearBtn = document.createElement("button");
+clearBtn.textContent = "Set to 0";
+clearBtn.style.backgroundColor = "#00b3ffff";
+
+const debugBtn = document.createElement("button");
+debugBtn.textContent = "Debug: OFF";
+debugBtn.style.backgroundColor = "#2A2A2A";
+
 let dataTable = document.createElement("div");
 chartContainer.append(dataTable);
 
+if (dataTable && dataTable.parentNode) {
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "relative";
+  wrapper.style.display = "inline-block";
+
+  dataTable.parentNode.insertBefore(wrapper, dataTable);
+
+  wrapper.appendChild(dataTable);
+
+  const btnContainer = document.createElement("div");
+  btnContainer.className = "table-buttons";
+
+  debugBtn.classList.add("debug-right");
+
+  btnContainer.appendChild(fillBtn);
+  btnContainer.appendChild(clearBtn);
+  btnContainer.appendChild(debugBtn);
+
+  wrapper.appendChild(btnContainer);
+}
+
 const creditsText = document.createElement("h1");
-creditsText.textContent = "yamalpaca - v.0.7.2";
+creditsText.textContent = "yamalpaca - v.0.8.0";
 creditsText.className = "credits";
 document.body.append(creditsText);
 
@@ -155,13 +203,6 @@ const gameIcons = new Image();
 gameIcons.src = gameimg;
 const starIcons = new Image();
 starIcons.src = starimg;
-
-const btnPressed: boolean[] = [];
-const btnActive: boolean[] = [];
-const btnMinAccuracy: number[] = [];
-const btnMaxAccuracy: number[] = [];
-const btnSlider: number[] = [];
-const btnType: number[] = [];
 
 function loadGame(index: number) {
   gd = gameData[index];
@@ -181,19 +222,25 @@ function loadGame(index: number) {
   starPressed = true;
   starActive = true;
   starState = 3;
+  scrollBarX = selectOffsetX;
+  scrollBarDrag = 0;
+
+  debugMode = false;
+
   critData.splice(0, critData.length);
-  btnPressed.splice(0, btnPressed.length);
-  btnActive.splice(0, btnActive.length);
-  btnMinAccuracy.splice(0, btnMinAccuracy.length);
-  btnMaxAccuracy.splice(0, btnMaxAccuracy.length);
-  btnSlider.splice(0, btnSlider.length);
-  btnType.splice(0, btnType.length);
-  btnPressed.push(...Array(gd.inputs.length).fill(true));
-  btnActive.push(...Array(gd.inputs.length).fill(true));
-  btnMinAccuracy.push(...Array(gd.inputs.length).fill(100));
-  btnMaxAccuracy.push(...Array(gd.inputs.length).fill(100));
-  btnSlider.push(...Array(gd.inputs.length).fill(3));
-  btnType.push(...Array(gd.inputs.length).fill(0));
+  btnData.length = 0;
+  for (let i = 0; i < gd.inputs.length; i++) {
+    btnData.push({
+      type: 0,
+      pressed: true,
+      active: true,
+      minacc: 100,
+      maxacc: 100,
+      slider: 3,
+      debug: 100,
+    });
+  }
+  debugBtn.textContent = "Debug: OFF";
 
   updatePage(true);
 }
@@ -212,9 +259,25 @@ function updatePage(all: boolean) {
     if (chartCanvas.width > globalThis.innerWidth - 15) {
       chartCanvas.width = globalThis.innerWidth - 15;
     }
-    chartCanvas.height = tileSize * (critData.length + 2) + 106;
+    chartCanvas.height = tileSize * (critData.length + 2) + 116;
+    if (debugMode) chartCanvas.height = tileSize * (critData.length + 3) + 10;
 
-    maxWidth = Math.floor((chartCanvas.width - selectOffsetX) / tileSize);
+    const cWidth = chartCanvas.width - selectOffsetX;
+
+    maxWidth = Math.floor(cWidth / tileSize);
+
+    scrollBarW = cWidth * (cWidth / (gd.inputs.length * tileSize));
+
+    scrollX = Math.max(
+      0,
+      Math.min(
+        scrollX,
+        Math.max(
+          0,
+          gd.inputs.length * tileSize - (chartCanvas.width - selectOffsetX),
+        ),
+      ),
+    );
 
     drawChart();
     updateText();
@@ -222,6 +285,7 @@ function updatePage(all: boolean) {
   }
 
   drawInterface();
+  drawScrollBar();
   drawHeader();
 }
 
@@ -252,69 +316,90 @@ function updateData() {
   for (let i: number = 0; i < gd.inputs.length; i++) {
     const input = gd.inputs[i];
 
-    btnType[i] = 0;
+    btnData[i].type = 0;
     const sep = gd.separators?.find((s) => s.index === i && s.img);
     if (sep) {
       gameid = sep.img as number;
     }
 
     if (timingData[gameid]?.type) {
-      btnType[i] = timingData[gameid]?.type as number;
+      btnData[i].type = timingData[gameid]?.type as number;
     }
 
-    btnActive[i] = !(input.combo && input.combotype != 1 &&
-      (!btnPressed[i - 1] || !btnActive[i - 1]));
-    if (btnType[i - 1] == 1) {
-      if ([0, 6].includes(btnSlider[i - 1]) && gd.inputs[i - 1].button == 4) {
-        btnActive[i] = false;
+    if (i == 0) {
+      btnData[i].active = true;
+    } else {
+      btnData[i].active = !(input.combo && input.combotype != 1 &&
+        (!btnData[i - 1].pressed || !btnData[i - 1].active));
+      if (btnData[i - 1].type == 1) {
+        if (
+          [0, 6].includes(btnData[i - 1].slider) && gd.inputs[i - 1].button == 4
+        ) {
+          btnData[i].active = false;
+        }
+        if (
+          debugMode && btnData[i - 1].debug <= 60 &&
+          gd.inputs[i - 1].button == 4
+        ) {
+          btnData[i].active = false;
+        }
       }
-    }
-    if (btnType[i - 1] == 8) {
-      if (
-        [0, 6].includes(btnSlider[i - 1]) && gd.inputs[i].combo &&
-        gd.inputs[i].combotype != 1
-      ) {
-        btnActive[i] = false;
+      if (btnData[i - 1].type == 8) {
+        if (
+          [0, 6].includes(btnData[i - 1].slider) && gd.inputs[i].combo &&
+          gd.inputs[i].combotype != 1
+        ) {
+          btnData[i].active = false;
+        }
+        if (
+          debugMode && btnData[i - 1].debug <= 60 && gd.inputs[i].combo &&
+          gd.inputs[i].combotype != 1
+        ) {
+          btnData[i].active = false;
+        }
       }
     }
 
-    if (btnPressed[i] && btnActive[i]) {
-      if (btnSlider[i] == 0) {
-        if (btnType[i] == 2) btnSlider[i] = 1;
-        if (btnType[i] == 3 && [6, 7].includes(gd.inputs[i].button)) {
-          btnSlider[i] = 1;
+    if (btnData[i].pressed && btnData[i].active) {
+      if (btnData[i].slider == 0) {
+        if (btnData[i].type == 2) btnData[i].slider = 1;
+        if (btnData[i].type == 3 && [6, 7].includes(gd.inputs[i].button)) {
+          btnData[i].slider = 1;
         }
-        if (btnType[i] == 4 && [4, 6].includes(gd.inputs[i].button)) {
-          btnSlider[i] = 1;
+        if (btnData[i].type == 4 && [4, 6].includes(gd.inputs[i].button)) {
+          btnData[i].slider = 1;
         }
-        if (btnType[i] == 5 && [5, 7].includes(gd.inputs[i].button)) {
-          btnSlider[i] = 1;
+        if (btnData[i].type == 5 && [5, 7].includes(gd.inputs[i].button)) {
+          btnData[i].slider = 1;
         }
-        if (btnType[i] == 6 && [4, 6].includes(gd.inputs[i].button)) {
-          btnSlider[i] = 1;
+        if (btnData[i].type == 6 && [4, 6].includes(gd.inputs[i].button)) {
+          btnData[i].slider = 1;
         }
       }
-      if (btnSlider[i] == 6) {
-        if (btnType[i] == 2) {
-          btnSlider[i] = 5;
+      if (btnData[i].slider == 6) {
+        if (btnData[i].type == 2) {
+          btnData[i].slider = 5;
         }
-        if (btnType[i] == 3 && [6, 7].includes(gd.inputs[i].button)) {
-          btnSlider[i] = 5;
+        if (btnData[i].type == 3 && [6, 7].includes(gd.inputs[i].button)) {
+          btnData[i].slider = 5;
         }
-        if (btnType[i] == 4 && [4, 6].includes(gd.inputs[i].button)) {
-          btnSlider[i] = 5;
+        if (btnData[i].type == 4 && [4, 6].includes(gd.inputs[i].button)) {
+          btnData[i].slider = 5;
         }
-        if (btnType[i] == 5 && [5, 7].includes(gd.inputs[i].button)) {
-          btnSlider[i] = 5;
+        if (btnData[i].type == 5 && [5, 7].includes(gd.inputs[i].button)) {
+          btnData[i].slider = 5;
         }
-        if (btnType[i] == 6 && [4, 6].includes(gd.inputs[i].button)) {
-          btnSlider[i] = 5;
+        if (btnData[i].type == 6 && [4, 6].includes(gd.inputs[i].button)) {
+          btnData[i].slider = 5;
         }
       }
     }
-    if (input.criteria == critData.length - 1) {
+    if (input.criteria == critData.length - 1 && input.multi > 0) {
       starPos = i;
-      if (!btnActive[i] || !btnPressed[i] || [0, 6].includes(btnSlider[i])) {
+      if (
+        !btnData[i].active || !btnData[i].pressed ||
+        [0, 6].includes(btnData[i].slider)
+      ) {
         starActive = false;
         starPressed = false;
         starState = 0;
@@ -325,11 +410,11 @@ function updateData() {
       critData[input.criteria].total += input.multi;
     } else {
       if (input.combo) {
-        if (input.combotype == 1 || btnActive[i]) {
+        if (input.combotype == 1 || btnData[i].active) {
           critData[input.criteria].total += input.multi;
         }
       } else {
-        if (btnPressed[i]) {
+        if (btnData[i].pressed) {
           critData[input.criteria].total += input.multi;
         }
       }
@@ -339,76 +424,84 @@ function updateData() {
     }
 
     if (
-      [4, 6].includes(input.button) && btnPressed[i] && i < gd.inputs.length - 1
+      [4, 6].includes(input.button) && btnData[i].pressed &&
+      i < gd.inputs.length - 1
     ) {
       if ([5, 7].includes(gd.inputs[i + 1].button)) {
-        if (btnPressed[i + 1] == false) {
+        if (btnData[i + 1].pressed == false) {
           pressCounter++;
         }
       } else {
         pressCounter++;
       }
     } else {
-      if (btnPressed[i] && btnActive[i]) pressCounter++;
+      if (btnData[i].pressed && btnData[i].active) pressCounter++;
     }
 
-    if (btnPressed[i] && btnActive[i]) {
-      let minacc = 100;
-      let maxacc = 100;
-      if (btnType[i] == 4 && [5, 7].includes(gd.inputs[i].button)) {
-        btnSlider[i] = 3;
-      } else if (btnType[i] == 7 && [5, 7].includes(gd.inputs[i].button)) {
-        btnSlider[i] = 3;
-      } else {
-        if (btnSlider[i] == 0) {
-          minacc = timingData[gameid].main[0];
-          if (timingData[gameid]?.release) {
-            if ([4, 6].includes(gd.inputs[i].button)) {
-              minacc = timingData[gameid].hold?.[0] ?? minacc;
+    if (btnData[i].pressed && btnData[i].active) {
+      let minacc = btnData[i].debug;
+      let maxacc = btnData[i].debug;
+
+      if (!debugMode) {
+        minacc = 100;
+        maxacc = 100;
+        if (btnData[i].type == 4 && [5, 7].includes(gd.inputs[i].button)) {
+          btnData[i].slider = 3;
+        } else if (
+          btnData[i].type == 7 && [5, 7].includes(gd.inputs[i].button)
+        ) {
+          btnData[i].slider = 3;
+        } else {
+          if (btnData[i].slider == 0) {
+            minacc = timingData[gameid].main[0];
+            if (timingData[gameid]?.release) {
+              if ([4, 6].includes(gd.inputs[i].button)) {
+                minacc = timingData[gameid].hold?.[0] ?? minacc;
+              }
+              if ([5, 7].includes(gd.inputs[i].button)) {
+                minacc = timingData[gameid].release?.[0] ?? minacc;
+              }
             }
-            if ([5, 7].includes(gd.inputs[i].button)) {
-              minacc = timingData[gameid].release?.[0] ?? minacc;
+            maxacc = 60;
+          }
+
+          if (btnData[i].slider == 6) {
+            minacc = timingData[gameid].main[1];
+            maxacc = timingData[gameid].main[2];
+            if (timingData[gameid]?.release) {
+              if ([4, 6].includes(gd.inputs[i].button)) {
+                minacc = timingData[gameid].hold?.[1] ?? minacc;
+                maxacc = timingData[gameid].hold?.[2] ?? maxacc;
+              }
+              if ([5, 7].includes(gd.inputs[i].button)) {
+                minacc = timingData[gameid].release?.[1] ?? minacc;
+                maxacc = timingData[gameid].release?.[2] ?? maxacc;
+              }
             }
           }
-          maxacc = 60;
-        }
 
-        if (btnSlider[i] == 6) {
-          minacc = timingData[gameid].main[1];
-          maxacc = timingData[gameid].main[2];
-          if (timingData[gameid]?.release) {
-            if ([4, 6].includes(gd.inputs[i].button)) {
-              minacc = timingData[gameid].hold?.[1] ?? minacc;
-              maxacc = timingData[gameid].hold?.[2] ?? maxacc;
-            }
-            if ([5, 7].includes(gd.inputs[i].button)) {
-              minacc = timingData[gameid].release?.[1] ?? minacc;
-              maxacc = timingData[gameid].release?.[2] ?? maxacc;
-            }
+          if ([1, 5].includes(btnData[i].slider)) {
+            minacc = 80;
+            maxacc = 84;
           }
-        }
-
-        if ([1, 5].includes(btnSlider[i])) {
-          minacc = 80;
-          maxacc = 84;
-        }
-        if ([2, 4].includes(btnSlider[i])) {
-          minacc = 85;
-          maxacc = 94;
+          if ([2, 4].includes(btnData[i].slider)) {
+            minacc = 85;
+            maxacc = 94;
+          }
         }
       }
 
       critData[input.criteria].hits += input.multi;
-      btnMinAccuracy[i] = minacc;
-      btnMaxAccuracy[i] = maxacc;
+      btnData[i].minacc = minacc;
+      btnData[i].maxacc = maxacc;
 
-      critData[input.criteria].minscore += btnMinAccuracy[i] * input.multi;
-      critData[input.criteria].maxscore += btnMaxAccuracy[i] * input.multi;
+      critData[input.criteria].minscore += btnData[i].minacc * input.multi;
+      critData[input.criteria].maxscore += btnData[i].maxacc * input.multi;
 
       if (input.extracrit > -1) {
         critData[input.extracrit].hits++;
-        critData[input.extracrit].minscore += btnMinAccuracy[i];
-        critData[input.extracrit].maxscore += btnMaxAccuracy[i];
+        critData[input.extracrit].minscore += btnData[i].minacc;
+        critData[input.extracrit].maxscore += btnData[i].maxacc;
       }
     }
   }
@@ -416,7 +509,7 @@ function updateData() {
   const starCrit = critData[critData.length - 1];
   const starReq = starCrit.total * 90;
 
-  if (starActive) {
+  if (starActive && !debugMode) {
     starState = starPressed ? 2 : 1;
     if (starCrit.maxscore < starCrit.total * 90) {
       starActive = false;
@@ -429,26 +522,26 @@ function updateData() {
       }
     }
 
-    starCrit.minscore -= btnMinAccuracy[starPos] * gd.inputs[starPos].multi;
-    starCrit.maxscore -= btnMaxAccuracy[starPos] * gd.inputs[starPos].multi;
+    starCrit.minscore -= btnData[starPos].minacc * gd.inputs[starPos].multi;
+    starCrit.maxscore -= btnData[starPos].maxacc * gd.inputs[starPos].multi;
     if (starPressed) {
-      btnMinAccuracy[starPos] = (starReq - starCrit.minscore) /
+      btnData[starPos].minacc = (starReq - starCrit.minscore) /
         gd.inputs[starPos].multi;
-      if (btnMinAccuracy[starPos] < 80) {
-        btnMinAccuracy[starPos] = 80;
+      if (btnData[starPos].minacc < 80) {
+        btnData[starPos].minacc = 80;
       }
-      btnMaxAccuracy[starPos] = 100;
+      btnData[starPos].maxacc = 100;
     }
     if (
       !starPressed &&
       starCrit.maxscore +
-            (btnMaxAccuracy[starPos] * gd.inputs[starPos].multi) >= starReq
+            (btnData[starPos].maxacc * gd.inputs[starPos].multi) >= starReq
     ) {
-      btnMaxAccuracy[starPos] =
+      btnData[starPos].maxacc =
         (starReq - starCrit.maxscore) / gd.inputs[starPos].multi - 1;
     }
-    starCrit.minscore += btnMinAccuracy[starPos] * gd.inputs[starPos].multi;
-    starCrit.maxscore += btnMaxAccuracy[starPos] * gd.inputs[starPos].multi;
+    starCrit.minscore += btnData[starPos].minacc * gd.inputs[starPos].multi;
+    starCrit.maxscore += btnData[starPos].maxacc * gd.inputs[starPos].multi;
   }
 
   critData.forEach((c: Criteria) => {
@@ -539,23 +632,25 @@ function drawHeader() {
     (critData.length + 2) * tileSize - 9,
   );
 
-  ctx.font = "12px Arial";
-  ctx.filter = "brightness(50%)";
-  ctx.fillText(
-    "Early",
-    selectOffsetX - 7,
-    (critData.length + 3) * tileSize - 18,
-  );
-  ctx.fillText(
-    "Perfect",
-    selectOffsetX - 7,
-    (critData.length + 3) * tileSize + 12,
-  );
-  ctx.fillText(
-    "Late",
-    selectOffsetX - 7,
-    (critData.length + 3) * tileSize + 42,
-  );
+  if (!debugMode) {
+    ctx.font = "12px Arial";
+    ctx.filter = "brightness(50%)";
+    ctx.fillText(
+      "Early",
+      selectOffsetX - 7,
+      (critData.length + 3) * tileSize - 18,
+    );
+    ctx.fillText(
+      "Perfect",
+      selectOffsetX - 7,
+      (critData.length + 3) * tileSize + 12,
+    );
+    ctx.fillText(
+      "Late",
+      selectOffsetX - 7,
+      (critData.length + 3) * tileSize + 42,
+    );
+  }
 
   ctx.strokeStyle = "black";
   ctx.lineWidth = 1;
@@ -678,21 +773,39 @@ function drawChart() {
       ctx.strokeStyle = "black";
       ctx.setLineDash([]);
 
-      if (!btnPressed[ioffset] || !btnActive[ioffset]) {
+      if (!btnData[ioffset].pressed || !btnData[ioffset].active) {
         ctx.lineWidth = 4;
         ctx.setLineDash([4, 5]);
       }
 
       if (
-        [0, 6].includes(btnSlider[ioffset]) && input.button == 4 &&
-        btnType[ioffset] == 1
+        [0, 6].includes(btnData[ioffset].slider) && input.button == 4 &&
+        btnData[ioffset].type == 1
       ) {
         ctx.lineWidth = 4;
         ctx.setLineDash([4, 5]);
       }
 
       if (
-        [0, 6].includes(btnSlider[ioffset]) && btnType[ioffset] == 8 &&
+        debugMode && btnData[ioffset].debug <= 60 &&
+        btnData[ioffset].type == 8 &&
+        input.square
+      ) {
+        ctx.lineWidth = 4;
+        ctx.setLineDash([4, 5]);
+      }
+
+      if (
+        debugMode && btnData[ioffset].debug <= 60 && input.button == 4 &&
+        btnData[ioffset].type == 1
+      ) {
+        ctx.lineWidth = 4;
+        ctx.setLineDash([4, 5]);
+      }
+
+      if (
+        [0, 6].includes(btnData[ioffset].slider) &&
+        btnData[ioffset].type == 8 &&
         input.square
       ) {
         ctx.lineWidth = 4;
@@ -715,13 +828,13 @@ function drawChart() {
     ctx.filter = "brightness(100%)";
 
     const iindex = input.criteria == critData.length - 1 ? 4 : input.criteria;
-    let itype = (btnPressed[ioffset] && btnActive[ioffset]) ? 1 : 2;
+    let itype = (btnData[ioffset].pressed && btnData[ioffset].active) ? 1 : 2;
 
     if (input.square) {
       itype += 2;
 
       if (
-        input.combo && !btnPressed[ioffset] && btnActive[ioffset]
+        input.combo && !btnData[ioffset].pressed && btnData[ioffset].active
       ) {
         itype = 2;
       }
@@ -792,52 +905,66 @@ function drawInterface() {
     tileSize * 2 + 110,
   );
 
-  for (let i: number = -loadDist; i < maxWidth + loadDist + 1; i++) {
-    const ioffset = i + Math.floor(scrollX / tileSize);
-    if (!gd.inputs[ioffset]) continue;
-    if (gd.inputs[ioffset].multi == 0) continue;
+  if (!debugMode) {
+    for (let i: number = -loadDist; i < maxWidth + loadDist + 1; i++) {
+      const ioffset = i + Math.floor(scrollX / tileSize);
+      if (!gd.inputs[ioffset]) continue;
+      if (gd.inputs[ioffset].multi == 0) continue;
 
-    let sliderOffset = 0;
+      let sliderOffset = 0;
 
-    if (btnType[ioffset] == 2) sliderOffset = 10;
-    if (btnType[ioffset] == 3 && [6, 7].includes(gd.inputs[ioffset].button)) {
-      sliderOffset = 10;
-    }
-    if (btnType[ioffset] == 4 && [4, 6].includes(gd.inputs[ioffset].button)) {
-      sliderOffset = 10;
-    }
-    if (btnType[ioffset] == 4 && [5, 7].includes(gd.inputs[ioffset].button)) {
-      continue;
-    }
-    if (btnType[ioffset] == 5 && [5, 7].includes(gd.inputs[ioffset].button)) {
-      sliderOffset = 10;
-    }
-    if (btnType[ioffset] == 6 && [4, 6].includes(gd.inputs[ioffset].button)) {
-      sliderOffset = 10;
-    }
-    if (btnType[ioffset] == 7 && [5, 7].includes(gd.inputs[ioffset].button)) {
-      continue;
-    }
+      if (btnData[ioffset].type == 2) sliderOffset = 10;
+      if (
+        btnData[ioffset].type == 3 && [6, 7].includes(gd.inputs[ioffset].button)
+      ) {
+        sliderOffset = 10;
+      }
+      if (
+        btnData[ioffset].type == 4 && [4, 6].includes(gd.inputs[ioffset].button)
+      ) {
+        sliderOffset = 10;
+      }
+      if (
+        btnData[ioffset].type == 4 && [5, 7].includes(gd.inputs[ioffset].button)
+      ) {
+        continue;
+      }
+      if (
+        btnData[ioffset].type == 5 && [5, 7].includes(gd.inputs[ioffset].button)
+      ) {
+        sliderOffset = 10;
+      }
+      if (
+        btnData[ioffset].type == 6 && [4, 6].includes(gd.inputs[ioffset].button)
+      ) {
+        sliderOffset = 10;
+      }
+      if (
+        btnData[ioffset].type == 7 && [5, 7].includes(gd.inputs[ioffset].button)
+      ) {
+        continue;
+      }
 
-    if (btnPressed[ioffset] && btnActive[ioffset]) {
-      if ([0, 6].includes(btnSlider[ioffset])) ctx.fillStyle = "#560900";
-      if ([1, 5].includes(btnSlider[ioffset])) ctx.fillStyle = "#6A2200";
-      if ([2, 4].includes(btnSlider[ioffset])) ctx.fillStyle = "#5A4100";
-      if (btnSlider[ioffset] == 3) ctx.fillStyle = "#611B3A";
-      ctx.fillRect(
-        (i * tileSize) + selectOffsetX + 10 - (scrollX % 30),
-        (critData.length + 2) * tileSize + 5 + sliderOffset,
-        10,
-        66 - (sliderOffset * 2),
-      );
-    } else {
-      ctx.fillStyle = "#2c2c2cff";
-      ctx.fillRect(
-        (i * tileSize) + selectOffsetX + 13 - (scrollX % 30),
-        (critData.length + 2) * tileSize + 5 + sliderOffset,
-        4,
-        66 - (sliderOffset * 2),
-      );
+      if (btnData[ioffset].pressed && btnData[ioffset].active) {
+        if ([0, 6].includes(btnData[ioffset].slider)) ctx.fillStyle = "#560900";
+        if ([1, 5].includes(btnData[ioffset].slider)) ctx.fillStyle = "#6A2200";
+        if ([2, 4].includes(btnData[ioffset].slider)) ctx.fillStyle = "#5A4100";
+        if (btnData[ioffset].slider == 3) ctx.fillStyle = "#611B3A";
+        ctx.fillRect(
+          (i * tileSize) + selectOffsetX + 10 - (scrollX % 30),
+          (critData.length + 2) * tileSize + 5 + sliderOffset,
+          10,
+          66 - (sliderOffset * 2),
+        );
+      } else {
+        ctx.fillStyle = "#2c2c2cff";
+        ctx.fillRect(
+          (i * tileSize) + selectOffsetX + 13 - (scrollX % 30),
+          (critData.length + 2) * tileSize + 5 + sliderOffset,
+          4,
+          66 - (sliderOffset * 2),
+        );
+      }
     }
   }
 
@@ -849,18 +976,22 @@ function drawInterface() {
     if (input.button < 4) continue;
 
     const hold = [4, 6].includes(input.button);
-    if (btnActive[ioffset + (hold ? 1 : 0)] == false) continue;
+    if (btnData[ioffset + (hold ? 1 : 0)] !== undefined) {
+      if (btnData[ioffset + (hold ? 1 : 0)].active == false) continue;
+    }
 
     ctx.fillStyle = input.button > 5 ? "#7F5E00" : "#8D1A1A";
 
-    if (btnActive[ioffset + (hold ? 1 : -1)] == false) continue;
+    if (btnData[ioffset + (hold ? 1 : -1)] !== undefined) {
+      if (btnData[ioffset + (hold ? 1 : -1)].active == false) continue;
+    }
 
-    if (btnPressed[ioffset]) {
+    if (btnData[ioffset].pressed) {
       const adjInput = gd.inputs[ioffset + (hold ? 1 : -1)];
       if (adjInput) {
         if (
           (hold ? [5, 7] : [4, 6]).includes(adjInput.button) &&
-          btnPressed[ioffset + (hold ? 1 : -1)] == false
+          btnData[ioffset + (hold ? 1 : -1)].pressed == false
         ) {
           ctx.fillStyle = input.button > 5 ? "#5E5E5E" : "#333333";
         }
@@ -896,7 +1027,7 @@ function drawInterface() {
 
     ctx.filter = "brightness(100%)";
 
-    if (ioffset == starPos) {
+    if (ioffset == starPos && !debugMode) {
       if ([1, 2].includes(starState) && selectX == starPos && sliderY > 6) {
         ctx.filter = "brightness(150%)";
         if (mouseFocus != 0) ctx.filter = "brightness(75%)";
@@ -913,7 +1044,7 @@ function drawInterface() {
 
     ctx.filter = "brightness(100%)";
 
-    if (!btnActive[ioffset]) {
+    if (!btnData[ioffset].active) {
       drawIcon(
         (i * tileSize) + selectOffsetX - (scrollX % 30),
         (critData.length + 1) * tileSize,
@@ -930,7 +1061,7 @@ function drawInterface() {
       if (mouseFocus != 0) ctx.filter = "brightness(75%)";
     }
 
-    if (!btnPressed[ioffset]) ctx.filter += "grayscale(100%)";
+    if (!btnData[ioffset].pressed) ctx.filter += "grayscale(100%)";
 
     drawIcon(
       (i * tileSize) + selectOffsetX - (scrollX % 30),
@@ -941,44 +1072,90 @@ function drawInterface() {
       chartCanvas,
     );
 
-    if (input.multi > 0 && btnPressed[ioffset]) {
-      if ([0, 6].includes(btnSlider[ioffset])) ctx.fillStyle = "#D12727";
-      if ([1, 5].includes(btnSlider[ioffset])) ctx.fillStyle = "#ff732dff";
-      if ([2, 4].includes(btnSlider[ioffset])) ctx.fillStyle = "#FBB400";
-      if (btnSlider[ioffset] == 3) ctx.fillStyle = "#FF4699";
-
-      ctx.filter = "none";
-      if (btnSlider[ioffset] == sliderY && selectX == ioffset && selectY > 0) {
-        ctx.filter = "brightness(150%)";
-        if (mouseFocus != 0) ctx.filter = "brightness(75%)";
-      }
-
-      ctx.fillRect(
-        (i * tileSize) + selectOffsetX + 5 - (scrollX % 30),
-        (critData.length + 2) * tileSize + 5 + (btnSlider[ioffset] * 10),
-        20,
-        6,
-      );
-
-      ctx.filter = "none";
-      ctx.letterSpacing = "1px";
-      ctx.textAlign = "center";
-      ctx.font = "bold 14px Arial";
-
-      if (ioffset != starPos) {
-        let sliderText = "";
-        if (btnSlider[ioffset] > 2) sliderText = "+";
-        sliderText += (btnSlider[ioffset] - 3).toString();
+    if (debugMode) {
+      if (btnData[ioffset].pressed && btnData[ioffset].active) {
+        ctx.fillStyle = "white";
+        ctx.filter = "none";
+        ctx.letterSpacing = "1px";
+        ctx.textAlign = "center";
+        ctx.font = "bold 14px Arial";
         ctx.fillText(
-          sliderText,
+          btnData[ioffset].debug.toString(),
           (i * tileSize) + selectOffsetX + 15 - (scrollX % 30),
-          (critData.length + 5) * tileSize + 5,
+          (critData.length + 3) * tileSize - 11,
         );
+      }
+    } else {
+      if (input.multi > 0 && btnData[ioffset].pressed) {
+        if ([0, 6].includes(btnData[ioffset].slider)) ctx.fillStyle = "#D12727";
+        if ([1, 5].includes(btnData[ioffset].slider)) {
+          ctx.fillStyle = "#ff732dff";
+        }
+        if ([2, 4].includes(btnData[ioffset].slider)) ctx.fillStyle = "#FBB400";
+        if (btnData[ioffset].slider == 3) ctx.fillStyle = "#FF4699";
+
+        ctx.filter = "none";
+        if (
+          btnData[ioffset].slider == sliderY && selectX == ioffset &&
+          selectY > 0
+        ) {
+          ctx.filter = "brightness(150%)";
+          if (mouseFocus != 0) ctx.filter = "brightness(75%)";
+        }
+
+        ctx.fillRect(
+          (i * tileSize) + selectOffsetX + 5 - (scrollX % 30),
+          (critData.length + 2) * tileSize + 5 + (btnData[ioffset].slider * 10),
+          20,
+          6,
+        );
+
+        ctx.filter = "none";
+        ctx.letterSpacing = "1px";
+        ctx.textAlign = "center";
+        ctx.font = "bold 14px Arial";
+
+        if (ioffset != starPos) {
+          let sliderText = "";
+          if (btnData[ioffset].slider > 2) sliderText = "+";
+          sliderText += (btnData[ioffset].slider - 3).toString();
+          ctx.fillText(
+            sliderText,
+            (i * tileSize) + selectOffsetX + 15 - (scrollX % 30),
+            (critData.length + 5) * tileSize + 5,
+          );
+        }
       }
     }
   }
 
   ctx.filter = "none";
+}
+
+function drawScrollBar() {
+  const ctx = chartCanvas.getContext("2d")!;
+  if (!ctx) return;
+
+  ctx.fillStyle = "#141414ff";
+  ctx.fillRect(
+    0,
+    chartCanvas.height - 10,
+    chartCanvas.width,
+    10,
+  );
+
+  ctx.fillStyle = "#4F4F4F";
+
+  ctx.fillRect(0, chartCanvas.height - 10, chartCanvas.width, 1);
+
+  if (scrollBarW < chartCanvas.width - selectOffsetX) {
+    ctx.fillRect(
+      scrollBarX,
+      chartCanvas.height - 10,
+      scrollBarW,
+      10,
+    );
+  }
 }
 
 function drawMeterCanvas() {
@@ -1204,6 +1381,23 @@ document.fonts.ready.then(() => {
 globalThis.addEventListener("resize", updatePage.bind(null, true));
 
 chartCanvas.addEventListener("mousemove", (e) => {
+  if (mouseFocus == 6) {
+    selectX = -1;
+
+    scrollBarX = e.offsetX - scrollBarDrag;
+    scrollBarX = Math.max(
+      selectOffsetX,
+      Math.min(scrollBarX, chartCanvas.width - scrollBarW),
+    );
+
+    scrollX = (scrollBarX - selectOffsetX) /
+      ((chartCanvas.width - selectOffsetX) / (gd.inputs.length * tileSize));
+
+    updatePage(true);
+
+    return;
+  }
+
   if (mouseFocus == 5) {
     selectX = -1;
     selectY = -1;
@@ -1220,6 +1414,10 @@ chartCanvas.addEventListener("mousemove", (e) => {
         ),
       ),
     );
+
+    scrollBarX = selectOffsetX +
+      scrollX *
+        ((chartCanvas.width - selectOffsetX) / (gd.inputs.length * tileSize));
     updatePage(true);
     return;
   }
@@ -1228,6 +1426,10 @@ chartCanvas.addEventListener("mousemove", (e) => {
     Math.floor((e.offsetX - selectOffsetX + (scrollX % 30)) / tileSize) +
     Math.floor(scrollX / tileSize);
   selectY = Math.floor(e.offsetY / 30) - critData.length - 1;
+
+  if (selectX > gd.inputs.length - 1) {
+    selectX = -1;
+  }
 
   const sliderTop = (critData.length + 2) * tileSize + 5;
   const rawSliderPos = Math.floor((e.offsetY + 7) / 10) * 10 - 5;
@@ -1242,26 +1444,33 @@ chartCanvas.addEventListener("mousemove", (e) => {
 
   if (selectY < -1) selectY = -1;
 
-  if (e.offsetX < selectOffsetX) {
+  if (e.offsetX <= selectOffsetX) {
     mouseFocus = 0;
     selectX = -1;
   }
+  if (selectX != -1) {
+    if (btnData[selectX].active) {
+      if (mouseFocus == 2 && selectY == 0) {
+        btnData[selectX].pressed = drawState;
+        if (prevSelectX != selectX || prevY != e.offsetY) updatePage(true);
+      } else if (
+        (mouseFocus == 3 || mouseFocus == 4) && btnData[selectX].pressed &&
+        !debugMode
+      ) {
+        btnData[selectX].slider = Math.min(sliderY, 6);
+        mouseFocus = 4;
 
-  if (btnActive[selectX]) {
-    if (mouseFocus == 2 && selectY == 0) {
-      btnPressed[selectX] = drawState;
-      if (prevSelectX != selectX || prevY != e.offsetY) updatePage(true);
-    } else if ((mouseFocus == 3 || mouseFocus == 4) && btnPressed[selectX]) {
-      btnSlider[selectX] = Math.min(sliderY, 6);
-      mouseFocus = 4;
-
-      updatePage(true);
+        updatePage(true);
+      } else {
+        if (prevSelectX != selectX || prevY != e.offsetY) updatePage(false);
+      }
     } else {
       if (prevSelectX != selectX || prevY != e.offsetY) updatePage(false);
     }
   } else {
-    if (prevSelectX != selectX || prevY != e.offsetY) updatePage(false);
+    updatePage(false);
   }
+
   prevSelectX = selectX;
   prevY = e.offsetY;
 });
@@ -1272,7 +1481,32 @@ chartCanvas.addEventListener("mousedown", (e) => {
   mouseFocus = 5;
   document.body.style.cursor = "grabbing";
 
-  if (e.offsetX < selectOffsetX || (!btnActive[selectX] && selectY > -1)) {
+  if (e.offsetX >= selectOffsetX && e.offsetY >= chartCanvas.height - 10) {
+    document.body.style.cursor = "default";
+    mouseFocus = 6;
+    selectX = -1;
+
+    if (e.offsetX < scrollBarX || e.offsetX > scrollBarX + scrollBarW) {
+      scrollBarDrag = scrollBarW / 2;
+
+      scrollBarX = e.offsetX - scrollBarDrag;
+      scrollBarX = Math.max(
+        selectOffsetX,
+        Math.min(scrollBarX, chartCanvas.width - scrollBarW),
+      );
+      scrollX = (scrollBarX - selectOffsetX) /
+        ((chartCanvas.width - selectOffsetX) / (gd.inputs.length * tileSize));
+
+      scrollBarDrag = e.offsetX - scrollBarX;
+    } else {
+      scrollBarDrag = e.offsetX - scrollBarX;
+    }
+
+    updatePage(true);
+    return;
+  }
+
+  if (e.offsetX < selectOffsetX || (!btnData[selectX].active && selectY > -1)) {
     document.body.style.cursor = "default";
     mouseFocus = 1;
     return;
@@ -1283,22 +1517,39 @@ chartCanvas.addEventListener("mousedown", (e) => {
 
   if (selectY == 0) {
     mouseFocus = 2;
-    drawState = !btnPressed[selectX];
-    btnPressed[selectX] = !btnPressed[selectX];
+    drawState = !btnData[selectX].pressed;
+
+    btnData[selectX].pressed = !btnData[selectX].pressed;
   } else if (selectY > 0) {
-    if (gd.inputs[selectX].multi == 0 || !btnPressed[selectX]) {
+    if (gd.inputs[selectX].multi == 0 || !btnData[selectX].pressed) {
       mouseFocus = 1;
       return;
     }
 
-    if (
-      selectX == starPos && e.offsetY > (critData.length + 5) * tileSize - 18
-    ) {
-      mouseFocus = 1;
-      if (starActive) starPressed = !starPressed;
-    } else {
+    if (debugMode) {
       mouseFocus = 3;
-      btnSlider[selectX] = Math.min(sliderY, 6);
+      if (btnData[selectX].pressed && btnData[selectX].active) {
+        const debugPrompt = prompt(
+          "Enter number:",
+          btnData[selectX].debug.toString(),
+        );
+
+        if (debugPrompt !== null && isFinite(Number(debugPrompt))) {
+          btnData[selectX].debug = Math.floor(Number(debugPrompt));
+        }
+
+        updatePage(true);
+      }
+    } else {
+      if (
+        selectX == starPos && e.offsetY > (critData.length + 5) * tileSize - 18
+      ) {
+        mouseFocus = 1;
+        if (starActive) starPressed = !starPressed;
+      } else {
+        mouseFocus = 3;
+        btnData[selectX].slider = Math.min(sliderY, 6);
+      }
     }
 
     updatePage(true);
@@ -1320,17 +1571,16 @@ chartCanvas.addEventListener("mouseup", (e) => {
     selectY = Math.floor(e.offsetY / 30) - critData.length - 1;
   }
 
-  if (mouseFocus == 3 || mouseFocus == 4) {
-    if (e.offsetY < (critData.length + 2) * tileSize + 72) {
-      if (btnActive[selectX] && btnPressed[selectX]) {
-        btnSlider[selectX] = Math.min(sliderY, 6);
+  if (!debugMode) {
+    if (mouseFocus == 3 || mouseFocus == 4) {
+      if (e.offsetY < (critData.length + 2) * tileSize + 72) {
+        if (btnData[selectX].active && btnData[selectX].pressed) {
+          btnData[selectX].slider = Math.min(sliderY, 6);
+        }
       }
     }
   }
 
-  if (mouseFocus == 3 && btnPressed[selectX] && btnActive[selectX]) {
-    // place here
-  }
   mouseFocus = 0;
   updatePage(true);
 });
@@ -1475,3 +1725,29 @@ function drawGameImg(index: number): HTMLCanvasElement {
     }
   });
 }
+
+fillBtn.addEventListener("click", () => {
+  btnData.forEach((b: Button) => {
+    b.active = true;
+    b.pressed = true;
+    b.slider = 3;
+    b.minacc = 100;
+    b.maxacc = 100;
+    b.debug = 100;
+  });
+  updatePage(true);
+});
+
+clearBtn.addEventListener("click", () => {
+  btnData.forEach((b: Button) => {
+    b.pressed = false;
+    b.slider = 3;
+  });
+  updatePage(true);
+});
+
+debugBtn.addEventListener("click", () => {
+  debugMode = !debugMode;
+  debugBtn.textContent = "Debug: " + (debugMode ? "ON" : "OFF");
+  updatePage(true);
+});

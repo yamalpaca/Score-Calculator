@@ -1,6 +1,6 @@
 # RHM Score Calculator
 
-v.0.7.2
+v.0.8.0
 
 yamalpaca
 
@@ -17,6 +17,12 @@ yamalpaca
 ---
 
 ## Change Log
+
+v.0.8.0
+
+- implemented scrollbar on the chart
+- added "set to 100", "set to 0", and debug buttons
+- added a separator to lumBEARjack
 
 v.0.7.2
 
