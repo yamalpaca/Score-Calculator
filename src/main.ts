@@ -328,6 +328,7 @@ function updateData() {
 
     if (i == 0) {
       btnData[i].active = true;
+      if (input.button == 5 && !btnData[i].pressed) pressCounter++;
     } else {
       btnData[i].active = !(input.combo && input.combotype != 1 &&
         (!btnData[i - 1].pressed || !btnData[i - 1].active));
