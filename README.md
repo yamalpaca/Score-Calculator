@@ -22,6 +22,7 @@ v.0.8.1
 
 - fixed press counter
 - fixed some inputs in songbird remix
+- fixed input bug in kitties!
 
 v.0.8.0
 

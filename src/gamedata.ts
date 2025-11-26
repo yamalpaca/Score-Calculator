@@ -2927,7 +2927,7 @@ export const gameData: Game[] = [
       ]),
       ...Array(6).fill({ ...inD, criteria: 0 }),
       { ...inD, criteria: 2 },
-      ...Array(0).fill({ ...inD, criteria: 0 }),
+      ...Array(2).fill({ ...inD, criteria: 0 }),
     ],
   },
   { // The Snappy Trio
