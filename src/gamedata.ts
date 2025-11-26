@@ -2528,16 +2528,22 @@ export const gameData: Game[] = [
         { ...inD, criteria: 0, square: true }
       ))),
       ...Array(6).fill({ ...inD, criteria: 0 }),
-      { ...inD, criteria: 0, button: 6 },
-      { ...inD, criteria: 0, button: 7 },
+      ...combo([
+        { ...inD, criteria: 0, button: 6 },
+        { ...inD, criteria: 0, button: 7 },
+      ]),
       ...Array(14).fill({ ...inD, criteria: 1 }),
       { ...inD, criteria: 0, button: 2 },
       ...Array(14).fill({ ...inD, criteria: 0 }),
-      { ...inD, criteria: 0, button: 6 },
-      { ...inD, criteria: 0, button: 7 },
+      ...combo([
+        { ...inD, criteria: 0, button: 6 },
+        { ...inD, criteria: 0, button: 7 },
+      ]),
       ...Array(6).fill({ ...inD, criteria: 0 }),
-      { ...inD, criteria: 0, button: 6 },
-      { ...inD, criteria: 0, button: 7 },
+      ...combo([
+        { ...inD, criteria: 0, button: 6 },
+        { ...inD, criteria: 0, button: 7 },
+      ]),
     ],
     separators: [
       { index: 0, img: 55 },

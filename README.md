@@ -21,6 +21,7 @@ yamalpaca
 v.0.8.1
 
 - fixed press counter
+- fixed some inputs in songbird remix
 
 v.0.8.0
 
