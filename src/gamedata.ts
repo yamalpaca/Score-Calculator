@@ -2739,7 +2739,7 @@ export const gameData: Game[] = [
       ...fillPair(
         { ...inD, criteria: 1, button: 3 },
         1,
-        { ...inD, criteria: 1, button: 0 },
+        { ...inD, criteria: 0 },
         2,
         2,
       ),
