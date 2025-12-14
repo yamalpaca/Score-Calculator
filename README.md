@@ -1,6 +1,6 @@
 # RHM Score Calculator
 
-v.0.8.2
+v.0.8.3
 
 yamalpaca
 
@@ -17,6 +17,10 @@ yamalpaca
 ---
 
 ## Change Log
+
+v.0.8.3
+
+- fixed blue bear
 
 v.0.8.2
 

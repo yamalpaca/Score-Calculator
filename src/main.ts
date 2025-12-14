@@ -189,7 +189,7 @@ if (dataTable && dataTable.parentNode) {
 }
 
 const creditsText = document.createElement("h1");
-creditsText.textContent = "yamalpaca - v.0.8.2";
+creditsText.textContent = "yamalpaca - v.0.8.3";
 creditsText.className = "credits";
 document.body.append(creditsText);
 
